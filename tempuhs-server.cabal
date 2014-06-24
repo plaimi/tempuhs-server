@@ -23,7 +23,7 @@ library
                        scotty >=0.7 && <0.8,
                        tempuhs >=0.0 && <0.1,
                        text >=1.1 && <1.2,
-                       transformers >=0.3 && <0.4
+                       transformers >=0.3 && <0.5
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -38,16 +38,16 @@ test-suite spec
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
   other-extensions:    OverloadedStrings
-  build-depends:       base,
+  build-depends:       base >=4.6 && <4.7,
                        bytestring >=0.10 && <0.11,
-                       hspec >=1.9 && <1.10,
+                       hspec >=1.9 && <1.11,
                        http-types >=0.8 && <0.9,
                        HUnit >=1.2 && <1.3,
                        persistent-sqlite >=1.3 && <1.4,
                        scotty >=0.7 && <0.8,
                        silently >=1.2 && <1.3,
                        tempuhs-server,
-                       transformers,
+                       transformers >=0.3 && <0.5,
                        wai >=2.1 && <2.2,
                        wai-test >=2.0 && <2.1
   hs-source-dirs:      test
