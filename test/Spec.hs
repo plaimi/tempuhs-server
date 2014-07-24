@@ -18,6 +18,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Database.Persist
+  (Entity (Entity)
+  ,KeyBackend (Key)
+  ,PersistValue (PersistInt64))
 import Database.Persist.Sqlite
   (withSqlitePool)
 import Network.HTTP.Types
@@ -51,6 +55,7 @@ import qualified Test.Hspec as HS
 import Web.Scotty
   (scottyApp)
 
+import Tempuhs.Chronology
 import Tempuhs.Server
 
 formPostRequest :: Request
@@ -83,8 +88,8 @@ assertBody :: L.ByteString -> SResponse -> Session ()
 -- value.
 assertBody s r = liftIO $ assertBool msg $ s == body
   where
-    msg  = "Expected response body " ++ ss s ++ ", but received " ++ ss body
-    ss   = show . L8.unpack
+    msg  = "Expected response body " ++ show s ++
+           ", but received " ++ show body
     body = simpleBody r
 
 assertRes :: Int -> L.ByteString -> SResponse -> Session ()
@@ -98,23 +103,28 @@ runSqliteSession :: Session () -> IO ()
 runSqliteSession s = withSqlitePool ":memory:" 1 runAppSession
   where runAppSession pool = runSession s =<< scottyApp (serve pool)
 
+mkKey :: Integer -> KeyBackend backend entity
+-- | 'mkKey' is a convenience function for constructing a database key.
+mkKey = Key . PersistInt64 . fromInteger
+
+showL8 :: Show a => a -> L.ByteString
+-- | 'showL8' converts a value to a 'L.ByteString' using 'show'.
+showL8 = L8.pack . show
+
 firstKey :: L.ByteString
 -- | 'firstKey' is the text representation of the first inserted key in a
 -- table.
-firstKey = "Key {unKey = PersistInt64 1}"
+firstKey = showL8 $ mkKey 1
+
+firstTimespanEntity :: Entity Timespan
+-- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'.
+firstTimespanEntity =
+  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) (-10) (-9) 9 10 1
 
 firstTimespans :: L.ByteString
 -- | 'firstTimespans' is the expected response body for a timespan query that
 -- matches that inserted by 'initTimespan'.
-firstTimespans =
-  L.concat
-    ["[(Entity {entityKey = "
-    ,firstKey
-    ,", entityVal = Timespan {timespanParent = Nothing, timespanClock = "
-    ,firstKey
-    ,", timespanBeginMin = -10.0, timespanBeginMax = -9.0, "
-    ,"timespanEndMin = 9.0, timespanEndMax = 10.0, timespanWeight = 1.0}},"
-    ,"[])]"]
+firstTimespans = showL8 [(firstTimespanEntity, [] :: [()])]
 
 initClock :: Session ()
 -- | 'initClock' inserts a clock into an empty database and checks the
