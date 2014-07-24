@@ -18,6 +18,8 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Text
+  (Text)
 import Database.Persist
   (Entity (Entity)
   ,KeyBackend (Key)
@@ -55,6 +57,7 @@ import qualified Test.Hspec as HS
 import Web.Scotty
   (scottyApp)
 
+import Plailude
 import Tempuhs.Chronology
 import Tempuhs.Server
 
@@ -121,10 +124,17 @@ firstTimespanEntity :: Entity Timespan
 firstTimespanEntity =
   Entity (mkKey 1) $ Timespan Nothing (mkKey 1) (-10) (-9) 9 10 1
 
-firstTimespans :: L.ByteString
+firstTimespans :: [Entity TimespanAttribute] -> L.ByteString
 -- | 'firstTimespans' is the expected response body for a timespan query that
--- matches that inserted by 'initTimespan'.
-firstTimespans = showL8 [(firstTimespanEntity, [] :: [()])]
+-- matches that inserted by 'initTimespan', together with the given list of
+-- attribute entities.
+firstTimespans attrs = showL8 [(firstTimespanEntity, attrs)]
+
+attributeEntity :: Integer -> Integer -> Text -> Text ->
+                   Entity TimespanAttribute
+-- | 'attributeEntity' is a convenience function for constructing
+-- an 'Entity' containing a 'TimespanAttribute'.
+attributeEntity k = Entity (mkKey k) .:. (TimespanAttribute . mkKey)
 
 initClock :: Session ()
 -- | 'initClock' inserts a clock into an empty database and checks the
@@ -136,6 +146,13 @@ initTimespan :: Session ()
 -- response.
 initTimespan = initClock >> post "/timespans" body >>= assertRes 200 firstKey
   where body = "clock=TT&beginMin=-10.0&beginMax=-9.0&endMin=9.0&endMax=10.0"
+
+initAttribute :: Session ()
+-- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
+-- and checks the response.
+initAttribute =
+  initTimespan >> post "/attributes" body >>= assertRes 200 firstKey
+  where body = "timespan=1&key=title&value=test"
 
 getTimespans :: (Double, Double) -> Session SResponse
 -- | 'getTimespans' performs a query for timespans in the given time range.
@@ -159,6 +176,19 @@ spec = do
   describe "POST /timespans" $
     it "inserts a timespan with key 1"
       initTimespan
+  describe "POST /attributes" $ do
+    it "inserts a timespan attribute with key 1"
+      initAttribute
+    it "modifies an existing timespan attribute" $ do
+      initAttribute
+      post "/attributes" "timespan=1&key=title&value=new" >>=
+        assertRes 200 firstKey
+      getTimespans (0, 0) >>=
+        assertRes 200 (firstTimespans [attributeEntity 1 1 "title" "new"])
+    it "deletes an existing timespan attribute" $ do
+      initAttribute
+      post "/attributes" "timespan=1&key=title" >>= assertRes 200 ""
+      getTimespans (0, 0) >>= assertRes 200 (firstTimespans [])
   describe "GET /timespans" $ do
     it "initially returns [] for an existing clock" $ do
       initClock
@@ -166,10 +196,14 @@ spec = do
     it "returns all timespans that touch or intersect the view" $ do
       initTimespan
       forM_ [(0, 0), (-11, -10), (10, 11), (-11, 11)] $
-        getTimespans >=> assertRes 200 firstTimespans
+        getTimespans >=> assertRes 200 (firstTimespans [])
     it "returns [] for views that don't intersect any timespan" $ do
       initTimespan
       forM_ [(-12, -11), (11, 12)] $ getTimespans >=> assertRes 200 "[]"
+    it "returns associated timespan attributes" $ do
+      initAttribute
+      getTimespans (0, 0) >>=
+        assertRes 200 (firstTimespans [attributeEntity 1 1 "title" "test"])
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.

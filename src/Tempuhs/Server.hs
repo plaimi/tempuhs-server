@@ -20,13 +20,18 @@ import Data.Text.Lazy
   (Text,pack)
 import Database.Persist
   (Entity (Entity)
+  ,KeyBackend (Key)
+  ,PersistValue (PersistInt64)
   ,(<=.)
   ,(==.)
   ,(>=.)
+  ,(=.)
+  ,delete
   ,entityKey
   ,getBy
   ,insert
-  ,selectList)
+  ,selectList
+  ,update)
 import Database.Persist.Sql
   (ConnectionPool
   ,SqlPersistM
@@ -102,6 +107,29 @@ postTimespan p = do
         return $ text . pack . show $ k
       Nothing                  -> return $ text ""
 
+postAttribute :: ConnectionPool -> ActionM ()
+-- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
+postAttribute p = do
+  timespan <- param      "timespan"
+  key      <- param      "key"
+  value    <- maybeParam "value"
+  join $ runDatabase p $
+    let tsId = Key (PersistInt64 $ fromInteger timespan)
+    in do
+      maybeAttribute <- getBy $ UniqueTimespanAttribute tsId key
+      case value of
+        Just v  ->
+          return . text . pack . show =<< case maybeAttribute of
+            Just (Entity attrId _) ->
+              update attrId [TimespanAttributeValue =. v] >> return attrId
+            Nothing                ->
+              insert $ TimespanAttribute tsId key v
+        Nothing -> do
+          case maybeAttribute of
+            Just (Entity attrId _) -> delete attrId
+            Nothing                -> return ()
+          return $ text ""
+
 postClock :: ConnectionPool -> ActionM ()
 -- | 'postClock' inserts a new 'Clock' into the database from a request.
 postClock p = do
@@ -113,6 +141,7 @@ postClock p = do
 serve :: ConnectionPool -> ScottyM ()
 -- | 'serve' is the scotty application for tempuhs.
 serve dbPool = do
-  get  "/timespans" $ timespans dbPool
-  post "/timespans" $ postTimespan dbPool
-  post "/clocks"    $ postClock dbPool
+  get  "/timespans"  $ timespans dbPool
+  post "/timespans"  $ postTimespan dbPool
+  post "/clocks"     $ postClock dbPool
+  post "/attributes" $ postAttribute dbPool
