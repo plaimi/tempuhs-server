@@ -113,7 +113,7 @@ firstTimespans =
     ,", entityVal = Timespan {timespanParent = Nothing, timespanClock = "
     ,firstKey
     ,", timespanBeginMin = -10.0, timespanBeginMax = -9.0, "
-    ,"timespanEndMin = 10.0, timespanEndMax = 10.0, timespanWeight = 1.0}},"
+    ,"timespanEndMin = 9.0, timespanEndMax = 10.0, timespanWeight = 1.0}},"
     ,"[])]"]
 
 initClock :: Session ()

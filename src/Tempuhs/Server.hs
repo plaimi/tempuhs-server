@@ -90,7 +90,7 @@ postTimespan p = do
   clock    <- param      "clock"
   beginMin <- param      "beginMin"
   beginMax <- param      "beginMax"
-  endMin   <- param      "endMax"
+  endMin   <- param      "endMin"
   endMax   <- param      "endMax"
   weight   <- defaultParam 1 "weight"
   join $ runDatabase p $ do
