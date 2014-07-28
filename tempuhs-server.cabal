@@ -13,7 +13,12 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Tempuhs.Server, Tempuhs.Server.CLI
+  exposed-modules:     Tempuhs.Server,
+                       Tempuhs.Server.CLI,
+                       Tempuhs.Server.Database,
+                       Tempuhs.Server.GET,
+                       Tempuhs.Server.POST,
+                       Tempuhs.Server.Param
   other-extensions:    OverloadedStrings
   build-depends:       base >=4.6 && <4.7,
                        bytestring >=0.10 && <0.11,
