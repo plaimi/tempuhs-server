@@ -8,31 +8,42 @@ Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.CLI where
 
 import Data.ByteString.Char8
-  (pack)
+  (
+  pack,
+  )
 import Database.Persist.Postgresql
-  (withPostgresqlPool)
+  (
+  withPostgresqlPool,
+  )
 import Options.Applicative
-  (Parser
-  ,(<>)
-  ,(<$>)
-  ,(<*>)
-  ,execParser
-  ,fullDesc
-  ,header
-  ,help
-  ,helper
-  ,info
-  ,long
-  ,metavar
-  ,option
-  ,progDesc
-  ,short
-  ,strOption
-  ,value)
+  (
+  Parser,
+  (<>),
+  (<$>),
+  (<*>),
+  execParser,
+  fullDesc,
+  header,
+  help,
+  helper,
+  info,
+  long,
+  metavar,
+  option,
+  progDesc,
+  short,
+  strOption,
+  value,
+  )
 import Web.Scotty
-  (scotty)
+  (
+  scotty,
+  )
 
 import Tempuhs.Server
+  (
+  serve,
+  )
 
 -- | A 'Config' stores all options needed by the program.
 data Config = Config

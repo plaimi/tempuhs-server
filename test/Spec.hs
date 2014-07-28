@@ -10,56 +10,85 @@ Maintainer  :  tempuhs@plaimi.net
 -} module Main where
 
 import Control.Monad
-  ((>=>)
-  ,forM_)
+  (
+  (>=>),
+  forM_,
+  )
 import Control.Monad.IO.Class
-  (liftIO)
+  (
+  liftIO,
+  )
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Text
-  (Text)
+  (
+  Text,
+  )
 import Database.Persist
-  (Entity (Entity)
-  ,KeyBackend (Key)
-  ,PersistValue (PersistInt64))
+  (
+  Entity (Entity),
+  KeyBackend (Key),
+  PersistValue (PersistInt64),
+  )
 import Database.Persist.Sqlite
-  (withSqlitePool)
+  (
+  withSqlitePool,
+  )
 import Network.HTTP.Types
-  (statusCode)
+  (
+  statusCode,
+  )
 import Network.Wai
-  (Request
-  ,requestHeaders
-  ,requestMethod)
+  (
+  Request,
+  requestHeaders,
+  requestMethod,
+  )
 import Network.Wai.Test
-  (Session
-  ,SResponse
-  ,SRequest (SRequest)
-  ,defaultRequest
-  ,request
-  ,runSession
-  ,setPath
-  ,simpleBody
-  ,simpleStatus
-  ,srequest)
+  (
+  Session,
+  SResponse,
+  SRequest (SRequest),
+  defaultRequest,
+  request,
+  runSession,
+  setPath,
+  simpleBody,
+  simpleStatus,
+  srequest,
+  )
 import System.IO
-  (stderr)
+  (
+  stderr,
+  )
 import System.IO.Silently
-  (hSilence)
+  (
+  hSilence,
+  )
 import Test.HUnit
-  (assertBool)
+  (
+  assertBool,
+  )
 import Test.Hspec
-  (Spec
-  ,describe
-  ,hspec)
+  (
+  Spec,
+  describe,
+  hspec,
+  )
 import qualified Test.Hspec as HS
 import Web.Scotty
-  (scottyApp)
+  (
+  scottyApp,
+  )
 
 import Plailude
 import Tempuhs.Chronology
 import Tempuhs.Server
+  (
+  serve,
+  )
 
 formPostRequest :: Request
 -- | 'formPostRequest' is a blank POST request for use with URL-encoded form

@@ -8,6 +8,9 @@ Maintainer  :  tempuhs@plaimi.net
 -} module Main where
 
 import Tempuhs.Server.CLI
+  (
+  cli,
+  )
 
 main :: IO ()
 -- | 'main' starts the server with options from the command line.
