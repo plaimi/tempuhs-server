@@ -139,10 +139,6 @@ mkKey :: Integer -> KeyBackend backend entity
 -- | 'mkKey' is a convenience function for constructing a database key.
 mkKey = Key . PersistInt64 . fromInteger
 
-showL8 :: Show a => a -> L.ByteString
--- | 'showL8' converts a value to a 'L.ByteString' using 'show'.
-showL8 = L8.pack . show
-
 firstKey :: L.ByteString
 -- | 'firstKey' is the text representation of the first inserted key in a
 -- table.
