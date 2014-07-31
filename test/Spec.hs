@@ -170,6 +170,16 @@ initTimespan :: Session ()
 initTimespan = initClock >> post "/timespans" body >>= assertRes 200 firstKey
   where body = "clock=TT&beginMin=-10.0&beginMax=-9.0&endMin=9.0&endMax=10.0"
 
+initSubTimespan :: Session ()
+-- | 'initSubTimespan' does 'initTimespan', then inserts another timespan with
+-- the first timespan as parent and checks the response.
+initSubTimespan =
+  initTimespan >> post "/timespans" body >>= assertRes 200 secondKey
+  where
+    body =
+      "parent=1&clock=TT&beginMin=-9.0&beginMax=-8.0&endMin=8.0&endMax=9.0"
+    secondKey = showL8 $ mkKey 2
+
 initAttribute :: Session ()
 -- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
 -- and checks the response.
@@ -196,9 +206,11 @@ spec = do
     it "won't insert two clocks with the same name" $ do
       initClock
       post  "/clocks" "name=TT" >>= assertStatus 500
-  describe "POST /timespans" $
+  describe "POST /timespans" $ do
     it "inserts a timespan with key 1"
       initTimespan
+    it "successfully inserts a sub-timespan" $ do
+      initSubTimespan
   describe "POST /attributes" $ do
     it "inserts a timespan attribute with key 1"
       initAttribute
