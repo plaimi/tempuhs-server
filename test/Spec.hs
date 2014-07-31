@@ -29,8 +29,6 @@ import Data.Text
 import Database.Persist
   (
   Entity (Entity),
-  KeyBackend (Key),
-  PersistValue (PersistInt64),
   )
 import Database.Persist.Sqlite
   (
@@ -89,6 +87,10 @@ import Tempuhs.Server
   (
   serve,
   )
+import Tempuhs.Server.Database
+  (
+  mkKey,
+  )
 
 formPostRequest :: Request
 -- | 'formPostRequest' is a blank POST request for use with URL-encoded form
@@ -134,10 +136,6 @@ runSqliteSession :: Session () -> IO ()
 -- | 'runSqliteSession' runs 'serve' with an empty in-memory database.
 runSqliteSession s = withSqlitePool ":memory:" 1 runAppSession
   where runAppSession pool = runSession s =<< scottyApp (serve pool)
-
-mkKey :: Integer -> KeyBackend backend entity
--- | 'mkKey' is a convenience function for constructing a database key.
-mkKey = Key . PersistInt64 . fromInteger
 
 firstKey :: L.ByteString
 -- | 'firstKey' is the text representation of the first inserted key in a

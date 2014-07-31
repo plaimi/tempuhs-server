@@ -14,6 +14,8 @@ import Control.Monad.IO.Class
 import Database.Persist
   (
   Entity,
+  KeyBackend (Key),
+  PersistValue (PersistInt64),
   (==.),
   entityKey,
   selectList,
@@ -36,6 +38,10 @@ getAttrs :: Entity Timespan -> SqlPersistM [Entity TimespanAttribute]
 -- | 'getAttrs' returns returns a list of all 'TimespanAttribute's for a given
 -- 'Timespan'.
 getAttrs e = selectList [TimespanAttributeTimespan ==. entityKey e] []
+
+mkKey :: Integer -> KeyBackend backend entity
+-- | 'mkKey' is a convenience function for constructing a database key.
+mkKey = Key . PersistInt64 . fromInteger
 
 runDatabase :: ConnectionPool -> SqlPersistM a -> ActionM a
 -- | 'runDatabase' is a convenience function for running a database

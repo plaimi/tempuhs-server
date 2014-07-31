@@ -21,8 +21,6 @@ import Data.Text.Lazy
 import Database.Persist
   (
   Entity (Entity),
-  KeyBackend (Key),
-  PersistValue (PersistInt64),
   (=.),
   getBy,
   delete,
@@ -43,6 +41,7 @@ import Web.Scotty
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
+  mkKey,
   runDatabase,
   )
 import Tempuhs.Server.Param
@@ -77,7 +76,7 @@ postAttribute p = do
   key      <- param      "key"
   value    <- maybeParam "value"
   join $ runDatabase p $
-    let tsId = Key (PersistInt64 $ fromInteger timespan)
+    let tsId = mkKey timespan
     in do
       maybeAttribute <- getBy $ UniqueTimespanAttribute tsId key
       case value of
