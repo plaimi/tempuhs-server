@@ -64,7 +64,7 @@ postTimespan p = do
     maybeClock <- getBy $ UniqueClock clock
     case maybeClock of
       Just (Entity clockKey _) -> do
-        k <- insert $ Timespan (liftM read parent) clockKey
+        k <- insert $ Timespan (liftM mkKey parent) clockKey
                       beginMin beginMax endMin endMax weight
         return $ text . pack . show $ k
       Nothing                  -> return $ text ""
