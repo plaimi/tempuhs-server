@@ -21,7 +21,6 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Text
   (
   Text,
@@ -209,7 +208,7 @@ spec = do
   describe "POST /timespans" $ do
     it "inserts a timespan with key 1"
       initTimespan
-    it "successfully inserts a sub-timespan" $ do
+    it "successfully inserts a sub-timespan"
       initSubTimespan
   describe "POST /attributes" $ do
     it "inserts a timespan attribute with key 1"
