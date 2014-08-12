@@ -25,6 +25,7 @@ import Database.Persist
   getBy,
   delete,
   insert,
+  repsert,
   update,
   )
 import Database.Persist.Sql
@@ -51,8 +52,10 @@ import Tempuhs.Server.Param
   )
 
 postTimespan :: ConnectionPool -> ActionM ()
--- | 'postTimespan' inserts a new 'Timespan' into the database from a request.
+-- | 'postTimespan' inserts a new 'Timespan' into the database, or updates an
+-- existing one, from a request.
 postTimespan p = do
+  timespan <- maybeParam "timespan"
   parent   <- maybeParam "parent"
   clock    <- param      "clock"
   beginMin <- param      "beginMin"
@@ -63,10 +66,13 @@ postTimespan p = do
   join $ runDatabase p $ do
     maybeClock <- getBy $ UniqueClock clock
     case maybeClock of
-      Just (Entity clockKey _) -> do
-        k <- insert $ Timespan (liftM mkKey parent) clockKey
-                      beginMin beginMax endMin endMax weight
-        return $ text . pack . show $ k
+      Just (Entity clockKey _) ->
+        let ts = Timespan (liftM mkKey parent) clockKey beginMin beginMax
+                 endMin endMax weight
+        in  return . text . pack . show =<< case timespan of
+          Just i  -> let k = mkKey i
+                     in  repsert k ts >> return k
+          Nothing -> insert ts
       Nothing                  -> return $ text ""
 
 postAttribute :: ConnectionPool -> ActionM ()

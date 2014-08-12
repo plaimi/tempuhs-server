@@ -146,6 +146,11 @@ firstTimespanEntity :: Entity Timespan
 firstTimespanEntity =
   Entity (mkKey 1) $ Timespan Nothing (mkKey 1) (-10) (-9) 9 10 1
 
+modTimespanEntity :: Entity Timespan
+-- | 'modTimespanEntity' is equal to the data inserted by 'initModTimespan'.
+modTimespanEntity =
+  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1
+
 firstTimespans :: [Entity TimespanAttribute] -> L.ByteString
 -- | 'firstTimespans' is the expected response body for a timespan query that
 -- matches that inserted by 'initTimespan', together with the given list of
@@ -179,6 +184,13 @@ initSubTimespan =
       "parent=1&clock=TT&beginMin=-9.0&beginMax=-8.0&endMin=8.0&endMax=9.0"
     secondKey = showL8 $ mkKey 2
 
+initModTimespan :: Session ()
+-- | 'initModTimespan' does 'initTimespan', then modifies the existing
+-- timespan and checks the response.
+initModTimespan =
+  initTimespan >> post "/timespans" body >>= assertRes 200 firstKey
+  where body = "timespan=1&clock=TT&beginMin=0&beginMax=1&endMin=9&endMax=10"
+
 initAttribute :: Session ()
 -- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
 -- and checks the response.
@@ -210,6 +222,10 @@ spec = do
       initTimespan
     it "successfully inserts a sub-timespan"
       initSubTimespan
+    it "modifies an existing timespan" $ do
+      initModTimespan
+      getTimespans (0, 0) >>=
+        assertRes 200 (showL8 [(modTimespanEntity, [] :: [()])])
   describe "POST /attributes" $ do
     it "inserts a timespan attribute with key 1"
       initAttribute
