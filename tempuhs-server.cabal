@@ -20,7 +20,7 @@ library
                        Tempuhs.Server.POST,
                        Tempuhs.Server.Param
   other-extensions:    OverloadedStrings
-  build-depends:       base >=4.6 && <4.7,
+  build-depends:       base >=4.6 && <4.8,
                        bytestring >=0.10 && <0.11,
                        optparse-applicative >=0.8 && <0.10,
                        persistent >=1.3 && <1.4,
@@ -34,7 +34,7 @@ library
 
 executable tempuhs-server
   main-is:             Main.hs
-  build-depends:       base >=4.6 && <4.7,
+  build-depends:       base >=4.6 && <4.8,
                        tempuhs-server
   hs-source-dirs:      src-exec
   default-language:    Haskell2010
@@ -43,7 +43,7 @@ test-suite spec
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
   other-extensions:    OverloadedStrings
-  build-depends:       base >=4.6 && <4.7,
+  build-depends:       base >=4.6 && <4.8,
                        bytestring >=0.10 && <0.11,
                        hspec >=1.9 && <1.12,
                        http-types >=0.8 && <0.9,
