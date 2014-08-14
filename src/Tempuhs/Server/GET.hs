@@ -12,7 +12,10 @@ Maintainer  :  tempuhs@plaimi.net
 import Control.Monad
   (
   join,
-  liftM,
+  )
+import Data.Functor
+  (
+  (<$>),
   )
 import Data.Text.Lazy
   (
@@ -59,6 +62,6 @@ timespans p = do
         list <- selectList [TimespanClock ==. clockKey
                            ,TimespanBeginMin <=. end
                            ,TimespanEndMax >=. begin] []
-        ts <- mapM (\e -> liftM ((,) e) (getAttrs e)) list
+        ts <- mapM (\e -> (,) e <$> getAttrs e) list
         return $ text . pack . show $ ts
       Nothing                  -> return $ text ""

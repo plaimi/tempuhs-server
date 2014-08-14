@@ -12,7 +12,10 @@ Maintainer  :  tempuhs@plaimi.net
 import Control.Monad
   (
   join,
-  liftM,
+  )
+import Data.Functor
+  (
+  (<$>),
   )
 import Data.Text.Lazy
   (
@@ -67,7 +70,7 @@ postTimespan p = do
     maybeClock <- getBy $ UniqueClock clock
     case maybeClock of
       Just (Entity clockKey _) ->
-        let ts = Timespan (liftM mkKey parent) clockKey beginMin beginMax
+        let ts = Timespan (mkKey <$> parent) clockKey beginMin beginMax
                  endMin endMax weight
         in  return . text . pack . show =<< case timespan of
           Just i  -> let k = mkKey i

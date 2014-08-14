@@ -7,13 +7,13 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Param where
 
-import Control.Monad
-  (
-  liftM,
-  )
 import Data.Maybe
   (
   fromMaybe,
+  )
+import Data.Functor
+  (
+  (<$>),
   )
 import Data.Text.Lazy
   (
@@ -35,4 +35,4 @@ maybeParam key = (param key >>= return . Just) `rescue` (\_ -> return Nothing)
 defaultParam :: Parsable a => a -> Text -> ActionM a
 -- | 'defaultParam' looks up a parameter and returns a default value if the
 -- parameter is not found.
-defaultParam val = liftM (fromMaybe val) . maybeParam
+defaultParam d p = fromMaybe d <$> maybeParam p
