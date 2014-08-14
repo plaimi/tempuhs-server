@@ -30,7 +30,7 @@ import Web.Scotty
 maybeParam :: Parsable a => Text -> ActionM (Maybe a)
 -- | 'maybeParam' looks up a parameter and wraps it in a 'Maybe', returning
 -- 'Nothing' if the parameter is not found.
-maybeParam key = (param key >>= return . Just) `rescue` (\_ -> return Nothing)
+maybeParam key = (Just <$> param key) `rescue` (\_ -> return Nothing)
 
 defaultParam :: Parsable a => a -> Text -> ActionM a
 -- | 'defaultParam' looks up a parameter and returns a default value if the
