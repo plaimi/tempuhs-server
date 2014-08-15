@@ -1,0 +1,51 @@
+Notes
+=====
+TT means terrestrial time:
+  <https://en.wikipedia.org/wiki/Terrestrial_time>.
+
+
+GET
+===
+/timespans
+  -- retrieve all timespans of a given clock that overlap the given
+  -- timeperiod, as well as the associated timespan attributes
+  clock: string -- the name of an existing clock
+  begin: float -- start of time period as read by the clock
+  end: float -- end of time period as read by the clock
+
+Examples:
+---------
+Get all timespans:
+  /timespans?begin=-Infinity&end=Infinity&clock=TT
+
+Get all timespans between -30 and -20:
+  /timespans?begin=-30&end=-20&clock=TT
+
+
+POST
+====
+/timespans
+  -- insert a new timespan
+  timespan: integer, optional -- ID of the timespan to replace
+  parent: integer, optional -- ID of the parent timespan if any
+  clock: string -- the name of an existing clock
+  beginMin: float -- lowest estimate of start time
+  beginMax: float -- highest estimate of start time
+  endMin: float -- lowest estimate of end time
+  endMax: float -- highest estimate of end time
+  weight: float, default 1 -- general factor for determining the
+                           -- importance/relevance of a timespan
+/attributes
+  -- set or remove an attribute for a given timespan
+  timespan: integer -- ID of timespan for which to change an attribute
+  key: string -- the name of the attribute
+  value: string, optional -- the new value if given, otherwise the
+                          -- attribute is removed
+/clocks
+  -- insert a new clock
+  name: string -- name used to identify the clock
+
+Examples:
+---------
+Post timespan that begins at -3/-2, and ends at 1/4, with the TT clock:
+  beginMin=-3.0&beginMax=-2.0&endMin=1.0&endMax=4.0&clock=TT
