@@ -17,10 +17,6 @@ import Data.Functor
   (
   (<$>),
   )
-import Data.Text.Lazy
-  (
-  pack,
-  )
 import Database.Persist
   (
   Entity (Entity),
@@ -39,7 +35,6 @@ import Web.Scotty
   (
   ActionM,
   param,
-  text,
   )
 
 import Tempuhs.Chronology
@@ -47,6 +42,13 @@ import Tempuhs.Server.Database
   (
   mkKey,
   runDatabase,
+  )
+import Tempuhs.Server.Output
+  (
+  errInvalidParam,
+  jsonError,
+  jsonKey,
+  jsonSuccess,
   )
 import Tempuhs.Server.Param
   (
@@ -72,11 +74,12 @@ postTimespan p = do
       Just (Entity clockKey _) ->
         let ts = Timespan (mkKey <$> parent) clockKey beginMin beginMax
                  endMin endMax weight
-        in  return . text . pack . show =<< case timespan of
+        in  return . jsonKey =<< case timespan of
           Just i  -> let k = mkKey i
                      in  repsert k ts >> return k
           Nothing -> insert ts
-      Nothing                  -> return $ text ""
+      Nothing                  ->
+        return $ jsonError $ errInvalidParam "clock"
 
 postAttribute :: ConnectionPool -> ActionM ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
@@ -90,7 +93,7 @@ postAttribute p = do
       maybeAttribute <- getBy $ UniqueTimespanAttribute tsId key
       case value of
         Just v  ->
-          return . text . pack . show =<< case maybeAttribute of
+          return . jsonKey =<< case maybeAttribute of
             Just (Entity attrId _) ->
               update attrId [TimespanAttributeValue =. v] >> return attrId
             Nothing                ->
@@ -99,7 +102,7 @@ postAttribute p = do
           case maybeAttribute of
             Just (Entity attrId _) -> delete attrId
             Nothing                -> return ()
-          return $ text ""
+          return jsonSuccess
 
 postClock :: ConnectionPool -> ActionM ()
 -- | 'postClock' inserts a new 'Clock' into the database from a request.
@@ -107,4 +110,4 @@ postClock p = do
   name <- param "name"
   join $ runDatabase p $ do
     k <- insert $ Clock name
-    return $ text . pack . show $ k
+    return $ jsonKey k

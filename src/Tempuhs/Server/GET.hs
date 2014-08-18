@@ -17,10 +17,6 @@ import Data.Functor
   (
   (<$>),
   )
-import Data.Text.Lazy
-  (
-  pack,
-  )
 import Database.Persist
   (
   Entity (Entity),
@@ -37,8 +33,8 @@ import Database.Persist.Sql
 import Web.Scotty
   (
   ActionM,
+  json,
   param,
-  text,
   )
 
 import Tempuhs.Chronology
@@ -46,6 +42,11 @@ import Tempuhs.Server.Database
   (
   getAttrs,
   runDatabase,
+  )
+import Tempuhs.Server.Output
+  (
+  errInvalidParam,
+  jsonError,
   )
 
 timespans :: ConnectionPool -> ActionM ()
@@ -62,6 +63,6 @@ timespans p = do
         list <- selectList [TimespanClock ==. clockKey
                            ,TimespanBeginMin <=. end
                            ,TimespanEndMax >=. begin] []
-        ts <- mapM (\e -> (,) e <$> getAttrs e) list
-        return $ text . pack . show $ ts
-      Nothing                  -> return $ text ""
+        json <$> mapM (\e -> (,) e <$> getAttrs e) list
+      Nothing                  ->
+        return $ jsonError $ errInvalidParam "clock"
