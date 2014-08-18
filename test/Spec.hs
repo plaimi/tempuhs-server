@@ -141,8 +141,8 @@ assertStatus :: Int -> SResponse -> Session ()
 -- expected value.
 assertStatus code r = assertBool msg $ code == status
   where
-    msg     = "Expected status code " ++ show code ++
-              ", but received "       ++ show status
+    msg     = "Expected status code:\t" ++ show code ++
+              "\nbut received:\t\t"       ++ show status
     status  = statusCode $ simpleStatus r
 
 assertContentType :: B.ByteString -> SResponse -> Session ()
@@ -150,8 +150,8 @@ assertContentType :: B.ByteString -> SResponse -> Session ()
 -- matches the expected value.
 assertContentType ct r = assertBool msg $ Just ct == h
   where
-    msg = "Expected content type " ++ show ct ++
-          ", but received " ++ fromMaybe "nothing" (show <$> h)
+    msg = "Expected content type:\t" ++ show ct ++
+          "\nbut received:\t\t" ++ fromMaybe "nothing" (show <$> h)
     h   = lookup "content-type" $ simpleHeaders r
 
 assertBody :: L.ByteString -> SResponse -> Session ()
@@ -159,8 +159,8 @@ assertBody :: L.ByteString -> SResponse -> Session ()
 -- value.
 assertBody s r = assertBool msg $ s == body
   where
-    msg  = "Expected response body " ++ show s ++
-           ", but received " ++ show body
+    msg  = "Expected response body:\t" ++ show s ++
+           "\nbut received:\t\t" ++ show body
     body = simpleBody r
 
 assertRes :: Int -> L.ByteString -> SResponse -> Session ()
@@ -177,7 +177,7 @@ assertJSON desc r f = do
   assertContentType "application/json" r
   assertBool msg $ (f <$> db) == Just True
   where
-    msg  = "Expected response body " ++ desc ++ ", but received " ++
+    msg  = "Expected response body:\t" ++ desc ++ "\nbut received:\t\t" ++
            fromMaybe ("invalid JSON " ++ show body) (showJSON <$> db)
     db   = decode body
     body = simpleBody r
