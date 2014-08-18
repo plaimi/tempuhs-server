@@ -111,6 +111,18 @@ import Tempuhs.Server.Database
   mkKey,
   )
 
+-- | 'Optionals' dictate what optional parameter for a POST is going to be
+-- left unspecified.
+data Optionals = MkOptionals
+  {optionalBeginMax  :: Bool -- ^ Whether beginMax is optional or not.
+  ,optionalEndMin    :: Bool -- ^ Whether endMin is optional or not.
+  ,optionalEndMax    :: Bool -- ^ Whether endMax is optional or not.
+  }
+
+noOptionals :: Optionals
+-- | Helper value for when to not leave any parametre optional.
+noOptionals = MkOptionals False False False
+
 formPostRequest :: Request
 -- | 'formPostRequest' is a blank POST request for use with URL-encoded form
 -- data as the body.
@@ -215,22 +227,34 @@ jsonSuccess :: Value
 -- return.
 jsonSuccess = object []
 
-firstTimespanEntity :: Entity Timespan
--- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'.
-firstTimespanEntity =
-  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) (-10) (-9) 9 10 1
+firstTimespanEntity :: Optionals -> Entity Timespan
+-- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'with
+-- the appropriate behaviour depending on the optionals given.
+firstTimespanEntity os =
+  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 10 begMax endMin endMax 1
+  where
+    (begMax, endMin, endMax) =
+      case (optionalBeginMax os, optionalEndMin os, optionalEndMax os) of
+        (True,  True,  True)  -> (11, 10, 11)
+        (False, True,  True)  -> (15, 10, 15)
+        (False, False, True)  -> (15, 24, 25)
+        (True,  False, True)  -> (11, 24, 25)
+        (False, True,  False) -> (15, 41, 42)
+        (True,  False, False) -> (11, 24, 42)
+        (True,  True,  False) -> (11, 41, 42)
+        (False, False, False) -> (15, 24, 42)
 
 modTimespanEntity :: Entity Timespan
 -- | 'modTimespanEntity' is equal to the data inserted by 'initModTimespan'.
 modTimespanEntity =
   Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1
 
-firstTimespans :: [Entity TimespanAttribute] ->
+firstTimespans :: Optionals -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'firstTimespans' is the expected response for a timespan query that
--- matches that inserted by 'initTimespan', together with the given list of
--- attribute entities.
-firstTimespans attrs = [(firstTimespanEntity, attrs)]
+-- matches that inserted by 'initTimespan' depending on the optionals given,
+-- and the given list of attribute entities.
+firstTimespans os attrs = [(firstTimespanEntity os, attrs)]
 
 attributeEntity :: Integer -> Integer -> Text -> Text ->
                    Entity TimespanAttribute
@@ -243,26 +267,24 @@ initClock :: Session ()
 -- response.
 initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 
-initTimespan :: Session ()
--- | 'initTimespan' does 'initClock', then inserts a timespan and checks the
--- response.
-initTimespan =
+initTimespan :: Optionals -> Session ()
+-- | 'initTimeSpan' does 'initClock', then inserts a timespan without
+-- specifying the optional values (falling back to default values) that are
+-- True, and checks the response.
+initTimespan os =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
-  where body = "clock=TT&beginMin=-10.0&beginMax=-9.0&endMin=9.0&endMax=10.0"
-
-initTimespanWithoutOptionals :: Session ()
--- | 'initTimespanWithoutOptionals' does 'initClock', then inserts a timespan
--- without the optional values (falling back to default values), and checks
--- the response.
-initTimespanWithoutOptionals =
-  initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
-  where body = "clock=TT&beginMin=-10.0&endMax=10.0"
+  where body = L8.pack . concat $
+          ["clock=TT&beginMin=10.0"]                     ++
+          ["&beginMax=15" | not . optionalBeginMax $ os] ++
+          ["&endMin=24"   | not . optionalEndMin   $ os] ++
+          ["&endMax=42"   | not . optionalEndMax   $ os]
 
 initSubTimespan :: Session ()
 -- | 'initSubTimespan' does 'initTimespan', then inserts another timespan with
 -- the first timespan as parent and checks the response.
 initSubTimespan =
-  initTimespan >> post "/timespans" body >>= assertJSONOK (jsonKey 2)
+  initTimespan noOptionals >>
+    post "/timespans" body >>= assertJSONOK (jsonKey 2)
   where
     body =
       "parent=1&clock=TT&beginMin=-9.0&beginMax=-8.0&endMin=8.0&endMax=9.0"
@@ -271,14 +293,16 @@ initModTimespan :: Session ()
 -- | 'initModTimespan' does 'initTimespan', then modifies the existing
 -- timespan and checks the response.
 initModTimespan =
-  initTimespan >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
+  initTimespan noOptionals >>
+    post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&clock=TT&beginMin=0&beginMax=1&endMin=9&endMax=10"
 
 initAttribute :: Session ()
 -- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
 -- and checks the response.
 initAttribute =
-  initTimespan >> post "/attributes" body >>= assertJSONOK (jsonKey 1)
+  initTimespan noOptionals >>
+    post "/attributes" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&key=title&value=test"
 
 getTimespans :: (Double, Double) -> Session SResponse
@@ -301,16 +325,55 @@ spec = do
       initClock
       post  "/clocks" "name=TT" >>= assertJSONError 500 "INTERNAL"
   describe "POST /timespans" $ do
-    it "inserts a timespan with key 1 (without specifying optionals)" $ do
-      initTimespanWithoutOptionals
-      getTimespans (0, 0) >>= assertJSONOK (firstTimespans [])
-    it "inserts a timespan with key 1 (specyfing the optionals)"
-      initTimespan
+    it "inserts a timespan with key 1 (w/o specifying any optionals)" $ do
+      let os = MkOptionals { optionalBeginMax = True
+                           , optionalEndMin   = True
+                           , optionalEndMax   = True }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying endMin/Max)" $ do
+      let os = MkOptionals { optionalBeginMax = False
+                           , optionalEndMin   = True
+                           , optionalEndMax   = True }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying ekndMax)" $ do
+      let os = MkOptionals { optionalBeginMax = False
+                           , optionalEndMin   = False
+                           , optionalEndMax   = True }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying beginMax/endMax)" $ do
+      let os = MkOptionals { optionalBeginMax = True
+                           , optionalEndMin   = False
+                           , optionalEndMax   = True }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying endMin)" $ do
+      let os = MkOptionals { optionalBeginMax = False
+                           , optionalEndMin   = True
+                           , optionalEndMax   = False }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying beginMax)" $ do
+      let os = MkOptionals { optionalBeginMax = True
+                           , optionalEndMin   = False
+                           , optionalEndMax   = False }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (w/o specifying beginMax/endMin)" $ do
+      let os = MkOptionals { optionalBeginMax = True
+                           , optionalEndMin   = True
+                           , optionalEndMax   = False }
+      initTimespan os
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans os [])
+    it "inserts a timespan with key 1 (specifying the optionals)" $ do
+      initTimespan noOptionals
     it "successfully inserts a sub-timespan"
       initSubTimespan
     it "modifies an existing timespan" $ do
       initModTimespan
-      getTimespans (0, 0) >>=
+      getTimespans (10, 42) >>=
         assertJSONOK [(modTimespanEntity, [] :: [()])]
   describe "POST /attributes" $ do
     it "inserts a timespan attribute with key 1"
@@ -319,27 +382,29 @@ spec = do
       initAttribute
       post "/attributes" "timespan=1&key=title&value=new" >>=
         assertJSONOK (jsonKey 1)
-      getTimespans (0, 0) >>=
-        assertJSONOK (firstTimespans [attributeEntity 1 1 "title" "new"])
+      getTimespans (10, 42) >>=
+        assertJSONOK (firstTimespans noOptionals
+                                     [attributeEntity 1 1 "title" "new"])
     it "deletes an existing timespan attribute" $ do
       initAttribute
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
-      getTimespans (0, 0) >>= assertJSONOK (firstTimespans [])
+      getTimespans (10, 42) >>= assertJSONOK (firstTimespans noOptionals [])
   describe "GET /timespans" $ do
     it "initially returns [] for an existing clock" $ do
       initClock
       get "/timespans?clock=TT&begin=0&end=0" >>= assertJSONOK ()
     it "returns all timespans that touch or intersect the view" $ do
-      initTimespan
-      forM_ [(0, 0), (-11, -10), (10, 11), (-11, 11)] $
-        getTimespans >=> assertJSONOK (firstTimespans [])
+      initTimespan noOptionals
+      forM_ [(10, 42), (9, 41), (11, 43), (9, 43)] $
+        getTimespans >=> assertJSONOK (firstTimespans noOptionals [])
     it "returns [] for views that don't intersect any timespan" $ do
-      initTimespan
-      forM_ [(-12, -11), (11, 12)] $ getTimespans >=> assertJSONOK ()
+      initTimespan noOptionals
+      forM_ [(0, 9), (43, 50)] $ getTimespans >=> assertJSONOK ()
     it "returns associated timespan attributes" $ do
       initAttribute
-      getTimespans (0, 0) >>=
-        assertJSONOK (firstTimespans [attributeEntity 1 1 "title" "test"])
+      getTimespans (10, 42) >>=
+        assertJSONOK (firstTimespans noOptionals
+                                     [attributeEntity 1 1 "title" "test"])
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.

@@ -70,12 +70,22 @@ postTimespan p = do
   beginMin      <- param          "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
   maybeEndMin   <- maybeParam     "endMin"
-  endMax        <- param          "endMax"
+  maybeEndMax   <- maybeParam     "endMax"
   weight        <- defaultParam 1 "weight"
 
-  -- If beginMax/endMin are not specified, set them to beginMin+1/endMax-1.
-  let beginMax = fromMaybe ((+( 1 :: ProperTime)) beginMin) maybeBeginMax
-      endMin   = fromMaybe ((+(-1 :: ProperTime)) endMax)   maybeEndMin
+  -- If beginMax isn't specified, set it to beginMin + 1
+  let beginMax           = fromMaybe ((+( 1 :: ProperTime)) beginMin)
+                                     maybeBeginMax
+  -- If endMin isn't specified, set it to endMax-1.
+  -- If endMax isn't specified, set it to endMin+1.
+  -- If neither are specified, set them to beginMax and beginMax+1.
+      (endMin, endMax)   =
+        case (maybeEndMin, maybeEndMax) of
+          (Nothing, Nothing) ->
+            (beginMin, fromMaybe (beginMin + (1 :: ProperTime)) maybeBeginMax)
+          (Just a, Nothing)  -> (a, a + (1 :: ProperTime))
+          (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
+          (Just a, Just b)   -> (a, b)
 
   join $ runDatabase p $ do
     maybeClock <- getBy $ UniqueClock clock
