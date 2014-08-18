@@ -30,8 +30,8 @@ POST
   parent: integer, optional -- ID of the parent timespan if any
   clock: string -- the name of an existing clock
   beginMin: float -- lowest estimate of start time
-  beginMax: float -- highest estimate of start time
-  endMin: float -- lowest estimate of end time
+  beginMax: float, optional -- highest estimate of start time
+  endMin: float, optional -- lowest estimate of end time
   endMax: float -- highest estimate of end time
   weight: float, default 1 -- general factor for determining the
                            -- importance/relevance of a timespan
@@ -49,3 +49,6 @@ Examples:
 ---------
 Post timespan that begins at -3/-2, and ends at 1/4, with the TT clock:
   beginMin=-3.0&beginMax=-2.0&endMin=1.0&endMax=4.0&clock=TT
+
+Post timespan that begins at 5, and ends at 6, with the TT clock:
+  beginMin=5.0&endMax=6.0&clock=TT

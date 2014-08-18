@@ -250,6 +250,14 @@ initTimespan =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where body = "clock=TT&beginMin=-10.0&beginMax=-9.0&endMin=9.0&endMax=10.0"
 
+initTimespanWithoutOptionals :: Session ()
+-- | 'initTimespanWithoutOptionals' does 'initClock', then inserts a timespan
+-- without the optional values (falling back to default values), and checks
+-- the response.
+initTimespanWithoutOptionals =
+  initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
+  where body = "clock=TT&beginMin=-10.0&endMax=10.0"
+
 initSubTimespan :: Session ()
 -- | 'initSubTimespan' does 'initTimespan', then inserts another timespan with
 -- the first timespan as parent and checks the response.
@@ -293,7 +301,10 @@ spec = do
       initClock
       post  "/clocks" "name=TT" >>= assertJSONError 500 "INTERNAL"
   describe "POST /timespans" $ do
-    it "inserts a timespan with key 1"
+    it "inserts a timespan with key 1 (without specifying optionals)" $ do
+      initTimespanWithoutOptionals
+      getTimespans (0, 0) >>= assertJSONOK (firstTimespans [])
+    it "inserts a timespan with key 1 (specyfing the optionals)"
       initTimespan
     it "successfully inserts a sub-timespan"
       initSubTimespan

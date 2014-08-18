@@ -13,6 +13,10 @@ import Control.Monad
   (
   join,
   )
+import Data.Maybe
+  (
+  fromMaybe,
+  )
 import Data.Functor
   (
   (<$>),
@@ -60,14 +64,19 @@ postTimespan :: ConnectionPool -> ActionM ()
 -- | 'postTimespan' inserts a new 'Timespan' into the database, or updates an
 -- existing one, from a request.
 postTimespan p = do
-  timespan <- maybeParam "timespan"
-  parent   <- maybeParam "parent"
-  clock    <- param      "clock"
-  beginMin <- param      "beginMin"
-  beginMax <- param      "beginMax"
-  endMin   <- param      "endMin"
-  endMax   <- param      "endMax"
-  weight   <- defaultParam 1 "weight"
+  timespan      <- maybeParam     "timespan"
+  parent        <- maybeParam     "parent"
+  clock         <- param          "clock"
+  beginMin      <- param          "beginMin"
+  maybeBeginMax <- maybeParam     "beginMax"
+  maybeEndMin   <- maybeParam     "endMin"
+  endMax        <- param          "endMax"
+  weight        <- defaultParam 1 "weight"
+
+  -- If beginMax/endMin are not specified, set them to beginMin+1/endMax-1.
+  let beginMax = fromMaybe ((+( 1 :: ProperTime)) beginMin) maybeBeginMax
+      endMin   = fromMaybe ((+(-1 :: ProperTime)) endMax)   maybeEndMin
+
   join $ runDatabase p $ do
     maybeClock <- getBy $ UniqueClock clock
     case maybeClock of
