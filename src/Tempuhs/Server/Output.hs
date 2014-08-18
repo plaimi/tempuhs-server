@@ -30,7 +30,7 @@ import Web.Scotty
 
 -- | An 'Error' consists of a status code, an error code and an error message
 -- to be sent as a response.
-data Error = Error
+data Error = MkError
   {errorStatus  :: Int    -- ^ HTTP status code.
   ,errorCode    :: T.Text -- ^ Code specifying the type of error.
   ,errorMessage :: T.Text -- ^ Human-readable error message.
@@ -39,16 +39,16 @@ data Error = Error
 errInternal :: T.Text -> Error
 -- | 'errInternal' specifies an internal server error with further details in
 -- the provided message text.
-errInternal = Error 500 "INTERNAL"
+errInternal = MkError 500 "INTERNAL"
 
 errNotFound :: Error
 -- | 'errNotFound' is the error given when no matching route is found.
-errNotFound = Error 404 "NOT_FOUND" "File not found"
+errNotFound = MkError 404 "NOT_FOUND" "File not found"
 
 errInvalidParam :: T.Text -> Error
 -- | 'errInvalidParam' is used when the specified request parameter is
 -- invalid.
-errInvalidParam = Error 400 "INVALID_PARAM" . T.append "Invalid parameter: "
+errInvalidParam = MkError 400 "INVALID_PARAM" . T.append "Invalid parameter: "
 
 jsonPair :: ToJSON a => T.Text -> a -> ActionM ()
 -- | 'jsonPair' generates a JSON object with a single attribute-value pair.
@@ -60,7 +60,7 @@ jsonSuccess = json $ object []
 
 jsonError :: Error -> ActionM ()
 -- | 'jsonError' generates a JSON response from the given 'Error'.
-jsonError (Error s c m) = do
+jsonError (MkError s c m) = do
   status $ toEnum s
   jsonPair "error" $ object ["code" .= c, "message" .= m]
 

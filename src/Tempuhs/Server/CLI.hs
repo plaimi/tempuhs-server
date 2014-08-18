@@ -46,7 +46,7 @@ import Tempuhs.Server
   )
 
 -- | A 'Config' stores all options needed by the program.
-data Config = Config
+data Config = MkConfig
   {database    :: String -- ^ Connection string for the database.
   ,connections :: Int    -- ^ Number of connections to the database.
   ,port        :: Int    -- ^ Server port.
@@ -54,7 +54,7 @@ data Config = Config
 
 options :: Parser Config
 -- | 'options' is a command-line 'Parser' for 'Config' options.
-options = Config
+options = MkConfig
   <$> strOption
       ( long    "database"
      <> short   'd'
@@ -75,7 +75,7 @@ options = Config
 
 run :: Config -> IO ()
 -- | 'run' starts the server with the specified 'Config' options.
-run (Config d c p) = withPostgresqlPool (pack d) c $ scotty p . serve
+run (MkConfig d c p) = withPostgresqlPool (pack d) c $ scotty p . serve
 
 cli :: IO ()
 -- | 'cli' starts the server with options from the command line.
