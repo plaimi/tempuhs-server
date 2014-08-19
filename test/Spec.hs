@@ -254,8 +254,8 @@ modTimespanEntity =
 firstTimespans :: Optionals -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'firstTimespans' is the expected response for a timespan query that
--- matches what 'initTimespan' inserted, depending on the 'Optionals' given and
--- the given '[Entity TimespanAttribute]'.
+-- matches what 'initTimespan' inserted, depending on the 'Optionals' given
+-- and the given '[Entity TimespanAttribute]'.
 firstTimespans os attrs = [(firstTimespanEntity os, attrs)]
 
 attributeEntity :: Integer -> Integer -> Text -> Text ->
