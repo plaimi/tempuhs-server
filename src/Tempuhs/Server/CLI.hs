@@ -45,7 +45,7 @@ import Tempuhs.Server
   serve,
   )
 
--- | A 'Config' stores all options needed by the program.
+-- | A 'Config' stores all the options needed by the program.
 data Config = MkConfig
   {database    :: String -- ^ Connection string for the database.
   ,connections :: Int    -- ^ Number of connections to the database.

@@ -135,13 +135,13 @@ get :: B.ByteString -> Session SResponse
 get = request . setPath defaultRequest
 
 post :: B.ByteString -> L.ByteString -> Session SResponse
--- | 'post' makes a POST request makes a POST 'request' with the given path
--- and URL-encoded form data body.
+-- | 'post' makes a POST 'request' with the given path and URL-encoded form
+-- data as the body.
 post p b = srequest $ SRequest (setPath formPostRequest p) b
 
 showJSON :: ToJSON a => a -> String
--- | 'showJSON' gives the JSON representation of the given value as
--- a 'String'.
+-- | 'showJSON' returns the JSON representation of the given value as a
+-- 'String'.
 showJSON = L8.unpack . encode
 
 assertBool :: String -> Bool -> Session ()
@@ -154,7 +154,7 @@ assertStatus :: Int -> SResponse -> Session ()
 assertStatus code r = assertBool msg $ code == status
   where
     msg     = "Expected status code:\t" ++ show code ++
-              "\nbut received:\t\t"       ++ show status
+              "\nbut received:\t\t"     ++ show status
     status  = statusCode $ simpleStatus r
 
 assertContentType :: B.ByteString -> SResponse -> Session ()
@@ -163,7 +163,7 @@ assertContentType :: B.ByteString -> SResponse -> Session ()
 assertContentType ct r = assertBool msg $ Just ct == h
   where
     msg = "Expected content type:\t" ++ show ct ++
-          "\nbut received:\t\t" ++ fromMaybe "nothing" (show <$> h)
+          "\nbut received:\t\t"      ++ fromMaybe "nothing" (show <$> h)
     h   = lookup "content-type" $ simpleHeaders r
 
 assertBody :: L.ByteString -> SResponse -> Session ()
@@ -172,7 +172,7 @@ assertBody :: L.ByteString -> SResponse -> Session ()
 assertBody s r = assertBool msg $ s == body
   where
     msg  = "Expected response body:\t" ++ show s ++
-           "\nbut received:\t\t" ++ show body
+           "\nbut received:\t\t"       ++ show body
     body = simpleBody r
 
 assertRes :: Int -> L.ByteString -> SResponse -> Session ()
@@ -189,17 +189,17 @@ assertJSON desc r f = do
   assertContentType "application/json" r
   assertBool msg $ (f <$> db) == Just True
   where
-    msg  = "Expected response body:\t" ++ desc ++ "\nbut received:\t\t" ++
-           fromMaybe ("invalid JSON " ++ show body) (showJSON <$> db)
+    msg  = "Expected response body:\t" ++ desc ++
+           "\nbut received:\t\t" ++ fromMaybe ("invalid JSON " ++ show body)
+                                              (showJSON <$> db)
     db   = decode body
     body = simpleBody r
 
 assertJSONOK :: ToJSON a => a -> SResponse -> Session ()
 -- | 'assertJSONOK' checks that a response has status "200 OK" and that it
 -- returns the expected JSON data.
-assertJSONOK v r = do
-  assertStatus 200 r
-  assertJSON (showJSON v) r (toJSON v ==)
+assertJSONOK v r =
+  assertStatus 200 r >> assertJSON (showJSON v) r (toJSON v ==)
 
 assertJSONError :: Int -> Text -> SResponse -> Session ()
 -- | 'assertJSONError' checks that a response is a JSON-encoded error message
@@ -208,15 +208,17 @@ assertJSONError s c r = do
   assertStatus s r
   assertJSON ("containing " ++ showJSON obj) r $ \db -> ec db == Just c
   where
-    ec  = AT.parseMaybe $ \v -> case v of
-      Object o -> o AT..: "error" >>= (AT..: "code")
-      _        -> mzero
+    ec  = AT.parseMaybe $
+      \v -> case v of
+              Object o -> o AT..: "error" >>= (AT..: "code")
+              _        -> mzero
     obj = object ["error" .= object ["code" .= c]]
 
 runSqliteSession :: Session () -> IO ()
 -- | 'runSqliteSession' runs 'serve' with an empty in-memory database.
-runSqliteSession s = withSqlitePool ":memory:" 1 runAppSession
-  where runAppSession pool = runSession s =<< scottyApp (serve pool)
+runSqliteSession s =
+  withSqlitePool ":memory:" 1 $
+    \pool -> runSession s =<< scottyApp (serve pool)
 
 jsonKey :: Integer -> Value
 -- | 'jsonKey' is the json representation of a database key.
@@ -252,8 +254,8 @@ modTimespanEntity =
 firstTimespans :: Optionals -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'firstTimespans' is the expected response for a timespan query that
--- matches that inserted by 'initTimespan' depending on the optionals given,
--- and the given list of attribute entities.
+-- matches what 'initTimespan' inserted, depending on the 'Optionals' given and
+-- the given '[Entity TimespanAttribute]'.
 firstTimespans os attrs = [(firstTimespanEntity os, attrs)]
 
 attributeEntity :: Integer -> Integer -> Text -> Text ->
@@ -270,7 +272,7 @@ initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 initTimespan :: Optionals -> Session ()
 -- | 'initTimeSpan' does 'initClock', then inserts a timespan without
 -- specifying the optional values (falling back to default values) that are
--- True, and checks the response.
+-- set to 'True' in the given 'Optionals', and checks the response.
 initTimespan os =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where body = L8.pack . concat $

@@ -46,5 +46,4 @@ mkKey = Key . PersistInt64 . fromInteger
 runDatabase :: ConnectionPool -> SqlPersistM a -> ActionM a
 -- | 'runDatabase' is a convenience function for running a database
 -- transaction within an 'ActionM', taking care of migration if necessary.
-runDatabase p a =
-  liftIO $ runSqlPersistMPool (runMigration migrateAll >> a) p
+runDatabase p a = liftIO $ runSqlPersistMPool (runMigration migrateAll >> a) p

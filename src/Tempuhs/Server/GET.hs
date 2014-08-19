@@ -50,7 +50,7 @@ import Tempuhs.Server.Output
   )
 
 timespans :: ConnectionPool -> ActionM ()
--- | 'timespans' serves a basic request for a list of 'Timespan's and
+-- | 'timespans' serves a basic request for a list of 'Timespan's with their
 -- associated 'TimespanAttribute's.
 timespans p = do
   clock <- param "clock"
