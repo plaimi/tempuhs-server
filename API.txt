@@ -4,11 +4,15 @@ TT means terrestrial time:
   <https://en.wikipedia.org/wiki/Terrestrial_time>.
 
 
-GET
-===
+
+
+#######
+# GET #
+#######
 /timespans
-  -- retrieve all timespans of a given clock that overlap the given
-  -- timeperiod, as well as the associated timespan attributes
+==========
+Retrieve all timespans of a given clock that overlap the given time period, as
+well as the associated timespan attributes:
   clock: string -- the name of an existing clock
   begin: float -- start of time period as read by the clock
   end: float -- end of time period as read by the clock
@@ -22,33 +26,80 @@ Get all timespans between -30 and -20:
   /timespans?begin=-30&end=-20&clock=TT
 
 
-POST
-====
+
+
+########
+# POST #
+########
 /timespans
-  -- insert a new timespan
+==========
+Insert a new timespan:
   timespan: integer, optional -- ID of the timespan to replace
   parent: integer, optional -- ID of the parent timespan if any
   clock: string -- the name of an existing clock
   beginMin: float -- lowest estimate of start time
   beginMax: float, optional -- highest estimate of start time
   endMin: float, optional -- lowest estimate of end time
-  endMax: float -- highest estimate of end time
+  endMax: float, optional -- highest estimate of end time
   weight: float, default 1 -- general factor for determining the
                            -- importance/relevance of a timespan
-/attributes
-  -- set or remove an attribute for a given timespan
-  timespan: integer -- ID of timespan for which to change an attribute
-  key: string -- the name of the attribute
-  value: string, optional -- the new value if given, otherwise the
-                          -- attribute is removed
-/clocks
-  -- insert a new clock
-  name: string -- name used to identify the clock
 
-Examples:
+Optionals chart:
++--------------------------------------------------------+
+| beginMin | beginMax | endMin | endMax | Result:        |
++----------+----------+--------+--------+----------------+
+|    10    |          |        |        | 10/11 -> 10/11 |
++----------+----------+--------+--------+----------------+
+|    10    |    15    |        |        | 10/15 -> 10/15 |
++----------+----------+--------+--------+----------------+
+|    10    |    15    |   24   |        | 10/15 -> 24/25 |
++----------+----------+--------+--------+----------------+
+|    10    |          |   24   |        | 10/11 -> 24/25 |
++----------+----------+--------+--------+----------------+
+|    10    |    15    |        |   42   | 10/15 -> 41/42 |
++----------+----------+--------+--------+----------------+
+|    10    |          |   24   |   42   | 10/11 -> 24/42 |
++----------+----------+--------+--------+----------------+
+|    10    |          |        |   42   | 10/11 -> 41/42 |
++----------+----------+--------+--------+----------------+
+|    10    |    15    |   24   |   42   | 10/15 -> 24/42 |
++----------+----------+--------+--------+----------------+
+
+Examples
 ---------
 Post timespan that begins at -3/-2, and ends at 1/4, with the TT clock:
   beginMin=-3.0&beginMax=-2.0&endMin=1.0&endMax=4.0&clock=TT
 
 Post timespan that begins at 5, and ends at 6, with the TT clock:
   beginMin=5.0&endMax=6.0&clock=TT
+
+Post timespan that begins at 5 with the TT clock:
+  beginMin=5.0&clock=TT
+
+Consult the optionals chart for what the values of beginEnd/endMin/endMax will
+be inferred to. Consider the chart carefully before relying on optionals!
+
+/attributes
+===========
+Set or remove an attribute for a given timespan:
+  timespan: integer -- ID of timespan for which to change an attribute
+  key: string -- the name of the attribute
+  value: string, optional -- the new value if given, otherwise the
+                          -- attribute is removed
+Examples
+---------
+Add the "Title" attribute with the value "Xonotic" to the timespan with ID 42:
+  timespan=42&key=Title&value=Xonotic
+
+Remove the "Title" attribute from the timespan with ID 42:
+  timespan=42&key=Title
+
+/clocks
+=======
+Insert a new clock:
+  name: string -- name used to identify the clock
+
+Examples
+--------
+Add the Julian Day Number system as a clock:
+  name=JDN
