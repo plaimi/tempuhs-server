@@ -13,6 +13,7 @@ import Control.Monad
   (
   (>=>),
   forM_,
+  guard,
   mzero,
   )
 import Control.Monad.IO.Class
@@ -397,7 +398,12 @@ spec = do
       get "/timespans?clock=TT&begin=0&end=0" >>= assertJSONOK ()
     it "returns all timespans that touch or intersect the view" $ do
       initTimespan noOptionals
-      forM_ [(10, 42), (9, 41), (11, 43), (9, 43)] $
+      let ranges = do
+            begin <- [9, 10, 11, 41, 42]
+            end   <- [10, 11, 41, 42, 43]
+            guard  (begin <= end)
+            return (begin, end)
+      forM_ ranges $
         getTimespans >=> assertJSONOK (firstTimespans noOptionals [])
     it "returns [] for views that don't intersect any timespan" $ do
       initTimespan noOptionals
