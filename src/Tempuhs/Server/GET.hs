@@ -13,16 +13,20 @@ import Control.Monad
   (
   join,
   )
+import Data.Foldable
+  (
+  toList,
+  )
 import Data.Functor
   (
   (<$>),
   )
 import Database.Persist
   (
-  Entity (Entity),
   (<=.),
   (==.),
   (>=.),
+  entityKey,
   getBy,
   selectList,
   )
@@ -34,13 +38,13 @@ import Web.Scotty
   (
   ActionM,
   json,
-  param,
   )
 
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
   getAttrs,
+  mkKey,
   runDatabase,
   )
 import Tempuhs.Server.Output
@@ -48,21 +52,30 @@ import Tempuhs.Server.Output
   errInvalidParam,
   jsonError,
   )
+import Tempuhs.Server.Param
+  (
+  maybeParam,
+  )
 
 timespans :: ConnectionPool -> ActionM ()
 -- | 'timespans' serves a basic request for a list of 'Timespan's with their
 -- associated 'TimespanAttribute's.
 timespans p = do
-  clock <- param "clock"
-  begin <- param "begin"
-  end   <- param "end"
+  parent <- maybeParam "parent"
+  clock  <- maybeParam "clock"
+  begin  <- maybeParam "begin"
+  end    <- maybeParam "end"
+  let filters = (TimespanParent ==. (mkKey <$> parent)) :
+                  [TimespanBeginMin <=. x | x <- toList end] ++
+                  [TimespanEndMax   >=. x | x <- toList begin]
   join $ runDatabase p $ do
-    maybeClock <- getBy $ UniqueClock clock
-    case maybeClock of
-      Just (Entity clockKey _) -> do
-        list <- selectList [TimespanClock ==. clockKey
-                           ,TimespanBeginMin <=. end
-                           ,TimespanEndMax >=. begin] []
+    clockFilter <- case clock of
+      Just i  -> do
+        maybeClock <- getBy (UniqueClock i)
+        return $ (\x -> [TimespanClock ==. entityKey x]) <$> maybeClock
+      Nothing -> return $ Just []
+    case clockFilter of
+      Just cf -> do
+        list <- selectList (cf ++ filters) []
         json <$> mapM (\e -> (,) e <$> getAttrs e) list
-      Nothing                  ->
-        return $ jsonError $ errInvalidParam "clock"
+      Nothing -> return $ jsonError $ errInvalidParam "clock"

@@ -13,18 +13,22 @@ TT means terrestrial time:
 ==========
 Retrieve all timespans of a given clock that overlap the given time period, as
 well as the associated timespan attributes:
-  clock: string -- the name of an existing clock
-  begin: float -- start of time period as read by the clock
-  end: float -- end of time period as read by the clock
+  parent: integer, optional -- ID of the parent timespan (returns top-level
+                            -- timespans if not given)
+  clock: string, optional -- the name of an existing clock
+  begin: float, optional -- start of time period as read by the clock
+  end: float, optional -- end of time period as read by the clock
 
 Examples:
 ---------
-Get all timespans:
-  /timespans?begin=-Infinity&end=Infinity&clock=TT
+Get all top-level timespans:
+  /timespans
 
-Get all timespans between -30 and -20:
+Get all top-level timespans between -30 and -20 on the TT clock:
   /timespans?begin=-30&end=-20&clock=TT
 
+Although it is possible to specify begin and end without specifying the clock,
+this is generally meaningless.
 
 
 

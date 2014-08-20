@@ -247,6 +247,11 @@ firstTimespanEntity os =
         (True,  True,  False) -> (11, 41, 42)
         (False, False, False) -> (15, 24, 42)
 
+subTimespanEntity :: Entity Timespan
+-- | 'subTimespanEntity' is equal to the data inserted by 'initSubTimespan'.
+subTimespanEntity =
+  Entity (mkKey 2) $ Timespan (Just $ mkKey 1) (mkKey 1) (-9) (-8) 8 9 1
+
 modTimespanEntity :: Entity Timespan
 -- | 'modTimespanEntity' is equal to the data inserted by 'initModTimespan'.
 modTimespanEntity =
@@ -393,26 +398,43 @@ spec = do
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
       getTimespans (10, 42) >>= assertJSONOK (firstTimespans noOptionals [])
   describe "GET /timespans" $ do
+    it "initially returns []" $
+      get "/timespans" >>= assertJSONOK ()
     it "initially returns [] for an existing clock" $ do
       initClock
       get "/timespans?clock=TT&begin=0&end=0" >>= assertJSONOK ()
     it "returns all timespans that touch or intersect the view" $ do
       initTimespan noOptionals
-      let ranges = do
-            begin <- [9, 10, 11, 41, 42]
-            end   <- [10, 11, 41, 42, 43]
-            guard  (begin <= end)
-            return (begin, end)
+      let
+        begins = [9, 10, 11, 41, 42]
+        ends   = [10, 11, 41, 42, 43]
+        ranges = do
+          begin <- begins
+          end   <- ends
+          guard  (begin <= end)
+          return (begin, end)
       forM_ ranges $
         getTimespans >=> assertJSONOK (firstTimespans noOptionals [])
+      forM_ ([("begin", x) | x <- begins] ++
+             [("end",   x) | x <- ends]) $ \(p, v) ->
+        get (B.concat ["/timespans?", p, "=", B8.pack $ show v]) >>=
+          assertJSONOK (firstTimespans noOptionals [])
     it "returns [] for views that don't intersect any timespan" $ do
       initTimespan noOptionals
       forM_ [(0, 9), (43, 50)] $ getTimespans >=> assertJSONOK ()
+      forM_ ["begin=43", "end=9"] $
+        get . B.append "/timespans?" >=> assertJSONOK ()
     it "returns associated timespan attributes" $ do
       initAttribute
       getTimespans (10, 42) >>=
         assertJSONOK (firstTimespans noOptionals
                                      [attributeEntity 1 1 "title" "test"])
+    it "filters on parent" $ do
+      initSubTimespan
+      get "/timespans" >>= assertJSONOK (firstTimespans noOptionals [])
+      get "/timespans?parent=1" >>=
+        assertJSONOK [(subTimespanEntity, [] :: [()])]
+
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.
