@@ -332,6 +332,10 @@ spec = do
     it "won't insert two clocks with the same name" $ do
       initClock
       post  "/clocks" "name=TT" >>= assertJSONError 500 "INTERNAL"
+    it "modifies an existing clock" $ do
+      initClock
+      post "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)
+      post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 2)
   describe "POST /timespans" $ do
     it "inserts a timespan with key 1 (w/o specifying any optionals)" $ do
       let os = MkOptionals { optionalBeginMax = True

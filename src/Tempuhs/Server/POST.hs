@@ -124,9 +124,14 @@ postAttribute p = do
           return jsonSuccess
 
 postClock :: ConnectionPool -> ActionM ()
--- | 'postClock' inserts a new 'Clock' into the database from a request.
+-- | 'postClock' inserts a new 'Clock' into the database, or updates an
+-- existing one, from a request.
 postClock p = do
-  name <- param "name"
-  join $ runDatabase p $ do
-    k <- insert $ Clock name
-    return $ jsonKey k
+  clock <- maybeParam "clock"
+  name  <- param "name"
+  join $ runDatabase p $
+    let c = Clock name
+    in  return . jsonKey =<< case clock of
+      Just i  -> let k = mkKey i
+                 in  repsert k c >> return k
+      Nothing -> insert c

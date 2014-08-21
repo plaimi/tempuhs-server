@@ -101,9 +101,13 @@ Remove the "Title" attribute from the timespan with ID 42:
 /clocks
 =======
 Insert a new clock:
+  clock: integer, optional -- ID of the clock to replace
   name: string -- name used to identify the clock
 
 Examples
 --------
 Add the Julian Day Number system as a clock:
   name=JDN
+
+Rename the clock with ID 3 to "MTC":
+  clock=3&name=MTC
