@@ -230,6 +230,11 @@ jsonSuccess :: Value
 -- return.
 jsonSuccess = object []
 
+clockEntity :: Integer -> Text -> Entity Clock
+-- | 'clockEntity' is a convenience function for constructing an 'Entity'
+-- containing a 'Clock'.
+clockEntity k = Entity (mkKey k) . Clock
+
 firstTimespanEntity :: Optionals -> Entity Timespan
 -- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'with
 -- the appropriate behaviour depending on the optionals given.
@@ -401,6 +406,20 @@ spec = do
       initAttribute
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
       getTimespans (10, 42) >>= assertJSONOK (firstTimespans noOptionals [])
+  describe "GET /clocks" $ do
+    it "initially returns []" $
+      get "/clocks" >>= assertJSONOK ()
+    it "returns clock after insertion" $ do
+      initClock
+      get "/clocks" >>= assertJSONOK [clockEntity 1 "TT"]
+    it "filters by name" $ do
+      initClock
+      get "/clocks?name=TT" >>= assertJSONOK [clockEntity 1 "TT"]
+      get "/clocks?name=NX" >>= assertJSONOK ()
+    it "filters by key" $ do
+      initClock
+      get "/clocks?id=1" >>= assertJSONOK [clockEntity 1 "TT"]
+      get "/clocks?id=2" >>= assertJSONOK ()
   describe "GET /timespans" $ do
     it "initially returns []" $
       get "/timespans" >>= assertJSONOK ()

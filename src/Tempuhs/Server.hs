@@ -24,6 +24,7 @@ import Web.Scotty
 
 import Tempuhs.Server.GET
   (
+  clocks,
   timespans,
   )
 import Tempuhs.Server.Output
@@ -44,6 +45,7 @@ serve :: ConnectionPool -> ScottyM ()
 serve dbPool = do
   defaultHandler jsonHandler
   get  "/timespans"  $ timespans dbPool
+  get  "/clocks"     $ clocks dbPool
   post "/timespans"  $ postTimespan dbPool
   post "/clocks"     $ postClock dbPool
   post "/attributes" $ postAttribute dbPool

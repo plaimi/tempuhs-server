@@ -30,6 +30,23 @@ Get all top-level timespans between -30 and -20 on the TT clock:
 Although it is possible to specify begin and end without specifying the clock,
 this is generally meaningless.
 
+/clocks
+=======
+Retrieve all clocks that match the given criteria:
+  name: string, optional -- the name of a clock
+  id: integer, optional -- the ID of a clock
+
+Examples:
+---------
+Get a list of all clocks:
+  /clocks
+
+Get the clock named "TT", if any:
+  /clocks?name=TT
+
+Get the clock with ID 1, if any:
+  /clocks?id=1
+
 
 
 ########

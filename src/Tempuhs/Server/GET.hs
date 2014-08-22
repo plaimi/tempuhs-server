@@ -79,3 +79,12 @@ timespans p = do
         list <- selectList (cf ++ filters) []
         json <$> mapM (\e -> (,) e <$> getAttrs e) list
       Nothing -> return $ jsonError $ errInvalidParam "clock"
+
+clocks :: ConnectionPool -> ActionM ()
+-- | 'clocks' serves a request for a list of 'Clock's.
+clocks p = do
+  name <- maybeParam "name"
+  cid  <- maybeParam "id"
+  let filters = [ClockName ==. x | x <- toList name] ++
+                  [ClockId ==. mkKey x | x <- toList cid]
+  join $ runDatabase p $ json <$> selectList filters []
