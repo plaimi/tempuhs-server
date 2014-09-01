@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -10,6 +11,15 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Spock where
 
+import Control.Monad.Catch
+  (
+  MonadThrow,
+  throwM,
+  )
+import Control.Monad.IO.Class
+  (
+  liftIO,
+  )
 import Data.Aeson
   (
   ToJSON,
@@ -57,6 +67,9 @@ instance ScottyError Error where
 
 -- | An 'ActionE' is an 'ActionT' with 'Error' as the exception type.
 type ActionE = ActionT Error IO
+
+instance MonadThrow ActionE where
+  throwM = liftIO . throwM
 
 -- | A 'ScottyE' is a 'ScottyT' with 'Error' as the exception type.
 type ScottyE = ScottyT Error IO

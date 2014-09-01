@@ -9,10 +9,6 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.POST where
 
-import Control.Monad
-  (
-  join,
-  )
 import Data.Maybe
   (
   fromMaybe,
@@ -44,6 +40,7 @@ import Web.Scotty.Trans
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
+  liftAE,
   mkKey,
   runDatabase,
   )
@@ -87,18 +84,18 @@ postTimespan p = do
           (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
           (Just a, Just b)   -> (a, b)
 
-  join $ runDatabase p $ do
+  runDatabase p $ do
     maybeClock <- getBy $ UniqueClock clock
     case maybeClock of
       Just (Entity clockKey _) ->
         let ts = Timespan (mkKey <$> parent) clockKey beginMin beginMax
                  endMin endMax weight
-        in  return . jsonKey =<< case timespan of
+        in  liftAE . jsonKey =<< case timespan of
           Just i  -> let k = mkKey i
                      in  repsert k ts >> return k
           Nothing -> insert ts
       Nothing                  ->
-        return $ raise $ errInvalidParam "clock"
+        liftAE $ raise $ errInvalidParam "clock"
 
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
@@ -106,13 +103,13 @@ postAttribute p = do
   timespan <- param      "timespan"
   key      <- param      "key"
   value    <- maybeParam "value"
-  join $ runDatabase p $
+  runDatabase p $
     let tsId = mkKey timespan
     in do
       maybeAttribute <- getBy $ UniqueTimespanAttribute tsId key
       case value of
         Just v  ->
-          return . jsonKey =<< case maybeAttribute of
+          liftAE . jsonKey =<< case maybeAttribute of
             Just (Entity attrId _) ->
               update attrId [TimespanAttributeValue =. v] >> return attrId
             Nothing                ->
@@ -121,7 +118,7 @@ postAttribute p = do
           case maybeAttribute of
             Just (Entity attrId _) -> delete attrId
             Nothing                -> return ()
-          return jsonSuccess
+          liftAE jsonSuccess
 
 postClock :: ConnectionPool -> ActionE ()
 -- | 'postClock' inserts a new 'Clock' into the database, or updates an
@@ -129,9 +126,9 @@ postClock :: ConnectionPool -> ActionE ()
 postClock p = do
   clock <- maybeParam "clock"
   name  <- param "name"
-  join $ runDatabase p $
+  runDatabase p $
     let c = Clock name
-    in  return . jsonKey =<< case clock of
+    in  liftAE . jsonKey =<< case clock of
       Just i  -> let k = mkKey i
                  in  repsert k c >> return k
       Nothing -> insert c
