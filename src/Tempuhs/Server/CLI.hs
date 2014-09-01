@@ -15,6 +15,10 @@ import Database.Persist.Postgresql
   (
   withPostgresqlPool,
   )
+import Network.Wai.Handler.Warp
+  (
+  Port,
+  )
 import Options.Applicative
   (
   Parser,
@@ -49,7 +53,7 @@ import Tempuhs.Server.Spock
 data Config = MkConfig
   {database    :: String -- ^ Connection string for the database.
   ,connections :: Int    -- ^ Number of connections to the database.
-  ,port        :: Int    -- ^ Server port.
+  ,port        :: Port   -- ^ Server port.
   }
 
 options :: Parser Config
