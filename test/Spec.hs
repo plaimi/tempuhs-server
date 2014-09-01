@@ -96,10 +96,6 @@ import Test.Hspec
   hspec,
   )
 import qualified Test.Hspec as HS
-import Web.Scotty
-  (
-  scottyApp,
-  )
 
 import Plailude
 import Tempuhs.Chronology
@@ -110,6 +106,10 @@ import Tempuhs.Server
 import Tempuhs.Server.Database
   (
   mkKey,
+  )
+import Tempuhs.Server.Spock
+  (
+  scottyAppE,
   )
 
 -- | 'Optionals' dictate what optional parameter for a POST is going to be
@@ -219,7 +219,7 @@ runSqliteSession :: Session () -> IO ()
 -- | 'runSqliteSession' runs 'serve' with an empty in-memory database.
 runSqliteSession s =
   withSqlitePool ":memory:" 1 $
-    \pool -> runSession s =<< scottyApp (serve pool)
+    \pool -> runSession s =<< scottyAppE (serve pool)
 
 jsonKey :: Integer -> Value
 -- | 'jsonKey' is the json representation of a database key.

@@ -13,25 +13,17 @@ import Database.Persist.Sql
   (
   ConnectionPool,
   )
-import Web.Scotty
+import Web.Scotty.Trans
   (
-  ScottyM,
   defaultHandler,
   get,
   notFound,
   post,
   )
-
 import Tempuhs.Server.GET
   (
   clocks,
   timespans,
-  )
-import Tempuhs.Server.Output
-  (
-  errNotFound,
-  jsonError,
-  jsonHandler,
   )
 import Tempuhs.Server.POST
   (
@@ -39,11 +31,17 @@ import Tempuhs.Server.POST
   postClock,
   postTimespan,
   )
+import Tempuhs.Server.Spock
+  (
+  ScottyE,
+  errNotFound,
+  jsonError,
+  )
 
-serve :: ConnectionPool -> ScottyM ()
+serve :: ConnectionPool -> ScottyE ()
 -- | 'serve' is the scotty application for tempuhs.
 serve dbPool = do
-  defaultHandler jsonHandler
+  defaultHandler jsonError
   get  "/timespans"  $ timespans dbPool
   get  "/clocks"     $ clocks dbPool
   post "/timespans"  $ postTimespan dbPool

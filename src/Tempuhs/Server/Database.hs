@@ -27,12 +27,12 @@ import Database.Persist.Sql
   runMigration,
   runSqlPersistMPool,
   )
-import Web.Scotty
-  (
-  ActionM,
-  )
 
 import Tempuhs.Chronology
+import Tempuhs.Server.Spock
+  (
+  ActionE,
+  )
 
 getAttrs :: Entity Timespan -> SqlPersistM [Entity TimespanAttribute]
 -- | 'getAttrs' returns returns a list of all 'TimespanAttribute's for a given
@@ -43,7 +43,7 @@ mkKey :: Integer -> KeyBackend backend entity
 -- | 'mkKey' is a convenience function for constructing a database key.
 mkKey = Key . PersistInt64 . fromInteger
 
-runDatabase :: ConnectionPool -> SqlPersistM a -> ActionM a
+runDatabase :: ConnectionPool -> SqlPersistM a -> ActionE a
 -- | 'runDatabase' is a convenience function for running a database
--- transaction within an 'ActionM', taking care of migration if necessary.
+-- transaction within an 'ActionE', taking care of migration if necessary.
 runDatabase p a = liftIO $ runSqlPersistMPool (runMigration migrateAll >> a) p

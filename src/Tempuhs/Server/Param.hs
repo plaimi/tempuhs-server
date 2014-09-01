@@ -19,20 +19,24 @@ import Data.Text.Lazy
   (
   Text,
   )
-import Web.Scotty
+import Web.Scotty.Trans
   (
-  ActionM,
   Parsable,
   param,
   rescue,
   )
 
-maybeParam :: Parsable a => Text -> ActionM (Maybe a)
+import Tempuhs.Server.Spock
+  (
+  ActionE,
+  )
+
+maybeParam :: Parsable a => Text -> ActionE (Maybe a)
 -- | 'maybeParam' looks up a parameter and wraps it in a 'Maybe', returning
 -- 'Nothing' if the parameter is not found.
 maybeParam key = (Just <$> param key) `rescue` (\_ -> return Nothing)
 
-defaultParam :: Parsable a => a -> Text -> ActionM a
+defaultParam :: Parsable a => a -> Text -> ActionE a
 -- | 'defaultParam' looks up a parameter and returns a default value if the
 -- parameter is not found.
 defaultParam d p = fromMaybe d <$> maybeParam p

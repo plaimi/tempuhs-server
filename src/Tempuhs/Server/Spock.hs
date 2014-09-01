@@ -2,12 +2,13 @@
 
 {- |
 Module      :  $Header$
-Description :  Functions for generating tempuhs server responses.
+Description :  Functions and types for tempuhs server responses and error
+               handling.
 Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Tempuhs.Server.Output where
+-} module Tempuhs.Server.Spock where
 
 import Data.Aeson
   (
@@ -21,11 +22,25 @@ import Database.Persist
   (
   KeyBackend
   )
-import Web.Scotty
+import Network.Wai
   (
-  ActionM,
+  Application,
+  )
+import Network.Wai.Handler.Warp
+  (
+  Port,
+  )
+import Web.Scotty.Trans
+  (
+  ActionT,
+  ScottyError,
+  ScottyT,
   json,
-  status
+  scottyAppT,
+  scottyT,
+  showError,
+  status,
+  stringError,
   )
 
 -- | An 'Error' consists of a status code, an error code and an error message
@@ -35,6 +50,24 @@ data Error = MkError
   ,errorCode    :: T.Text -- ^ Code specifying the type of error.
   ,errorMessage :: T.Text -- ^ Human-readable error message.
   }
+
+instance ScottyError Error where
+  stringError = errInternal . T.pack
+  showError (MkError s c m) = L.fromChunks [T.pack $ show s, " ", c, ": ", m]
+
+-- | An 'ActionE' is an 'ActionT' with 'Error' as the exception type.
+type ActionE = ActionT Error IO
+
+-- | A 'ScottyE' is a 'ScottyT' with 'Error' as the exception type.
+type ScottyE = ScottyT Error IO
+
+scottyE :: Port -> ScottyE () -> IO ()
+-- | 'scottyE' runs a 'ScottyE' application using the warp server.
+scottyE p = scottyT p id id
+
+scottyAppE :: ScottyE () -> IO Application
+-- | 'scottyAppE' turns a 'ScottyE' application into a WAI 'Application'.
+scottyAppE = scottyAppT id id
 
 errInternal :: T.Text -> Error
 -- | 'errInternal' specifies an internal server error with further details in
@@ -50,25 +83,20 @@ errInvalidParam :: T.Text -> Error
 -- invalid.
 errInvalidParam = MkError 400 "INVALID_PARAM" . T.append "Invalid parameter: "
 
-jsonPair :: ToJSON a => T.Text -> a -> ActionM ()
+jsonPair :: ToJSON a => T.Text -> a -> ActionE ()
 -- | 'jsonPair' generates a JSON object with a single attribute-value pair.
 jsonPair t v = json $ object [t .= v]
 
-jsonSuccess :: ActionM ()
+jsonSuccess :: ActionE ()
 -- | 'jsonSuccess' generates an empty JSON object.
 jsonSuccess = json $ object []
 
-jsonError :: Error -> ActionM ()
+jsonError :: Error -> ActionE ()
 -- | 'jsonError' generates a JSON response from the given 'Error'.
 jsonError (MkError s c m) = do
   status $ toEnum s
   jsonPair "error" $ object ["code" .= c, "message" .= m]
 
-jsonKey :: KeyBackend backend entity -> ActionM ()
+jsonKey :: KeyBackend backend entity -> ActionE ()
 -- | 'jsonKey' generates a JSON representation of a database key.
 jsonKey = jsonPair "id"
-
-jsonHandler :: L.Text -> ActionM ()
--- | 'jsonHandler' is used to turn any unhandled errors into JSON-encoded
--- error responses.
-jsonHandler = jsonError . errInternal . L.toStrict

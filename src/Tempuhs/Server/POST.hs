@@ -35,10 +35,10 @@ import Database.Persist.Sql
   (
   ConnectionPool,
   )
-import Web.Scotty
+import Web.Scotty.Trans
   (
-  ActionM,
   param,
+  raise,
   )
 
 import Tempuhs.Chronology
@@ -47,20 +47,20 @@ import Tempuhs.Server.Database
   mkKey,
   runDatabase,
   )
-import Tempuhs.Server.Output
-  (
-  errInvalidParam,
-  jsonError,
-  jsonKey,
-  jsonSuccess,
-  )
 import Tempuhs.Server.Param
   (
   defaultParam,
   maybeParam,
   )
+import Tempuhs.Server.Spock
+  (
+  ActionE,
+  errInvalidParam,
+  jsonKey,
+  jsonSuccess,
+  )
 
-postTimespan :: ConnectionPool -> ActionM ()
+postTimespan :: ConnectionPool -> ActionE ()
 -- | 'postTimespan' inserts a new 'Timespan' into the database, or updates an
 -- existing one, from a request.
 postTimespan p = do
@@ -98,9 +98,9 @@ postTimespan p = do
                      in  repsert k ts >> return k
           Nothing -> insert ts
       Nothing                  ->
-        return $ jsonError $ errInvalidParam "clock"
+        return $ raise $ errInvalidParam "clock"
 
-postAttribute :: ConnectionPool -> ActionM ()
+postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
 postAttribute p = do
   timespan <- param      "timespan"
@@ -123,7 +123,7 @@ postAttribute p = do
             Nothing                -> return ()
           return jsonSuccess
 
-postClock :: ConnectionPool -> ActionM ()
+postClock :: ConnectionPool -> ActionE ()
 -- | 'postClock' inserts a new 'Clock' into the database, or updates an
 -- existing one, from a request.
 postClock p = do

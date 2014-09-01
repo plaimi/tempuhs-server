@@ -35,14 +35,14 @@ import Options.Applicative
   strOption,
   value,
   )
-import Web.Scotty
-  (
-  scotty,
-  )
 
 import Tempuhs.Server
   (
   serve,
+  )
+import Tempuhs.Server.Spock
+  (
+  scottyE,
   )
 
 -- | A 'Config' stores all the options needed by the program.
@@ -75,7 +75,7 @@ options = MkConfig
 
 run :: Config -> IO ()
 -- | 'run' starts the server with the specified 'Config' options.
-run (MkConfig d c p) = withPostgresqlPool (pack d) c $ scotty p . serve
+run (MkConfig d c p) = withPostgresqlPool (pack d) c $ scottyE p . serve
 
 cli :: IO ()
 -- | 'cli' starts the server with options from the command line.

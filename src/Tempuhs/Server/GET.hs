@@ -34,10 +34,10 @@ import Database.Persist.Sql
   (
   ConnectionPool,
   )
-import Web.Scotty
+import Web.Scotty.Trans
   (
-  ActionM,
   json,
+  raise,
   )
 
 import Tempuhs.Chronology
@@ -47,17 +47,17 @@ import Tempuhs.Server.Database
   mkKey,
   runDatabase,
   )
-import Tempuhs.Server.Output
-  (
-  errInvalidParam,
-  jsonError,
-  )
 import Tempuhs.Server.Param
   (
   maybeParam,
   )
+import Tempuhs.Server.Spock
+  (
+  ActionE,
+  errInvalidParam,
+  )
 
-timespans :: ConnectionPool -> ActionM ()
+timespans :: ConnectionPool -> ActionE ()
 -- | 'timespans' serves a basic request for a list of 'Timespan's with their
 -- associated 'TimespanAttribute's.
 timespans p = do
@@ -78,9 +78,9 @@ timespans p = do
       Just cf -> do
         list <- selectList (cf ++ filters) []
         json <$> mapM (\e -> (,) e <$> getAttrs e) list
-      Nothing -> return $ jsonError $ errInvalidParam "clock"
+      Nothing -> return $ raise $ errInvalidParam "clock"
 
-clocks :: ConnectionPool -> ActionM ()
+clocks :: ConnectionPool -> ActionE ()
 -- | 'clocks' serves a request for a list of 'Clock's.
 clocks p = do
   name <- maybeParam "name"
