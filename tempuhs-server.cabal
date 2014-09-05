@@ -13,14 +13,14 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Tempuhs.Server,
-                       Tempuhs.Server.CLI,
-                       Tempuhs.Server.Database,
-                       Tempuhs.Server.GET,
-                       Tempuhs.Server.POST,
-                       Tempuhs.Server.Param,
+  exposed-modules:     Tempuhs.Server
+                       Tempuhs.Server.CLI
+                       Tempuhs.Server.Database
+                       Tempuhs.Server.GET
+                       Tempuhs.Server.POST
+                       Tempuhs.Server.Param
                        Tempuhs.Server.Spock
-  other-extensions:    FlexibleInstances,
+  other-extensions:    FlexibleInstances
                        OverloadedStrings
   build-depends:       aeson >=0.7 && <0.8,
                        base >=4.6 && <4.8,
