@@ -18,6 +18,8 @@ well as the associated timespan attributes:
   clock: string, optional -- the name of an existing clock
   begin: float, optional -- start of time period as read by the clock
   end: float, optional -- end of time period as read by the clock
+  rubbish: timestamp, optional -- timestamp string for the earliest timespan
+                               -- to retrieve
 
 Examples:
 ---------
@@ -128,3 +130,22 @@ Add the Julian Day Number system as a clock:
 
 Rename the clock with ID 3 to "MTC":
   clock=3&name=MTC
+
+
+
+##########
+# DELETE #
+##########
+/timespans
+==========
+Rubbishes a timespan.
+  timespan -- the ID of the timespan to rubbish.
+
+Examples
+--------
+Rubbish the πρωτόπλαστος:
+  timespan=1
+
+Rubbish the Answer to The Ultimate Question of Life, the Universe, and
+Everything:
+  timespan=42

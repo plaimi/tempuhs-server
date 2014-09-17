@@ -16,6 +16,7 @@ library
   exposed-modules:     Tempuhs.Server
                        Tempuhs.Server.CLI
                        Tempuhs.Server.Database
+                       Tempuhs.Server.DELETE
                        Tempuhs.Server.GET
                        Tempuhs.Server.POST
                        Tempuhs.Server.Param
@@ -27,6 +28,7 @@ library
                        bytestring >=0.10 && <0.11,
                        exceptions >=0.6 && <0.7,
                        monad-logger >=0.3 && <0.4,
+                       old-locale >=1.0 && <1.1,
                        optparse-applicative >=0.8 && <0.10,
                        persistent >=1.3 && <1.4,
                        persistent-postgresql >=1.3 && <1.4,
@@ -34,6 +36,7 @@ library
                        scotty >=0.7 && <0.9,
                        tempuhs >=0.0 && <0.1,
                        text >=1.1 && <1.2,
+                       time >=1.4 && <1.5,
                        transformers >=0.3 && <0.5,
                        wai >=3.0 && <3.1,
                        warp >=3.0 && <3.1
@@ -66,6 +69,7 @@ test-suite spec
                        tempuhs >=0.0 && <0.1,
                        tempuhs-server,
                        text >=1.1 && <1.2,
+                       time >=1.4 && <1.5,
                        transformers >=0.3 && <0.5,
                        wai >=3.0 && <3.1,
                        wai-extra >=3.0 && <3.1

@@ -46,6 +46,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.Param
   (
+  ParsableTime (fromParsableTime),
   maybeParam,
   )
 import Tempuhs.Server.Spock
@@ -58,13 +59,18 @@ timespans :: ConnectionPool -> ActionE ()
 -- | 'timespans' serves a basic request for a list of 'Timespan's with their
 -- associated 'TimespanAttribute's.
 timespans p = do
-  parent <- maybeParam "parent"
-  clock  <- maybeParam "clock"
-  begin  <- maybeParam "begin"
-  end    <- maybeParam "end"
-  let filters = (TimespanParent ==. (mkKey <$> parent)) :
-                  [TimespanBeginMin <=. x | x <- toList end] ++
-                  [TimespanEndMax   >=. x | x <- toList begin]
+  parent  <- maybeParam "parent"
+  clock   <- maybeParam "clock"
+  begin   <- maybeParam "begin"
+  end     <- maybeParam "end"
+  rubbish <- maybeParam "rubbish"
+  let filters = (TimespanParent ==. (mkKey <$> parent))                :
+                (let (#) = case rubbish of
+                             Just _  -> (>=.)
+                             Nothing -> (==.)
+                 in  TimespanRubbish # (fromParsableTime <$> rubbish)) :
+                [TimespanBeginMin <=. x | x <- toList end]             ++
+                [TimespanEndMax   >=. x | x <- toList begin]
   runDatabase p $ do
     clockFilter <- case clock of
       Just i  -> do

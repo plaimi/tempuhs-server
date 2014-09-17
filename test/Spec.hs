@@ -48,6 +48,7 @@ import Data.List
 import Data.Maybe
   (
   fromMaybe,
+  isJust,
   )
 import qualified Data.Set as Z
 import Data.Text
@@ -64,6 +65,8 @@ import Database.Persist.Sqlite
   )
 import Network.HTTP.Types
   (
+  methodDelete,
+  methodPost,
   statusCode,
   )
 import Network.Wai
@@ -127,7 +130,7 @@ formPostRequest :: Request
 -- | 'formPostRequest' is a blank POST request for use with URL-encoded form
 -- data as the body.
 formPostRequest = defaultRequest
-  { requestMethod = "POST"
+  { requestMethod = methodPost
   , requestHeaders = [("Content-Type", "application/x-www-form-urlencoded")]}
 
 get :: B.ByteString -> Session SResponse
@@ -138,6 +141,10 @@ post :: B.ByteString -> L.ByteString -> Session SResponse
 -- | 'post' makes a POST 'request' with the given path and URL-encoded form
 -- data as the body.
 post p b = srequest $ SRequest (setPath formPostRequest p) b
+
+delete :: B.ByteString -> Session SResponse
+-- | 'delete' makes a DELETE 'request' with the given path.
+delete = request . setPath defaultRequest { requestMethod = methodDelete }
 
 showJSON :: ToJSON a => a -> String
 -- | 'showJSON' returns the JSON representation of the given value as a
@@ -234,6 +241,21 @@ clockEntity :: Integer -> Text -> Entity Clock
 -- containing a 'Clock'.
 clockEntity k = Entity (mkKey k) . Clock
 
+rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])] ->
+            [(Entity Timespan, [Entity TimespanAttribute])] ->
+            Bool
+-- | 'rubbishP' takes two get /timespan-results, and checks if the 'Timespan'
+-- within the second result is the same as a rubbished version of the useful
+-- timespan in the first result.
+rubbishP ((Entity ek ev,_):es) ((f@(Entity _ fv),_):fs) =
+  let fr = timespanRubbish fv
+  in  isJust fr                                                &&
+      toJSON (Entity ek ev {timespanRubbish = fr}) == toJSON f &&
+      rubbishP es fs
+rubbishP [] []                                          = True
+rubbishP _  []                                          = False
+rubbishP []  _                                          = False
+
 firstTimespanEntity :: Z.Set String -> Entity Timespan
 -- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'
 -- with the appropriate behaviour depending on which optionals are specified
@@ -265,6 +287,11 @@ modTimespanEntity :: Entity Timespan
 -- | 'modTimespanEntity' is equal to the data inserted by 'initModTimespan'.
 modTimespanEntity =
   Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1 Nothing
+
+defaultTimespans :: [(Entity Timespan, [Entity TimespanAttribute])]
+-- | 'defaultTimespans' is a helper value for the often used 'firstTimespans'
+-- with 'specifedsSet' and '[]'.
+defaultTimespans = firstTimespans specifiedsSet []
 
 firstTimespans :: Z.Set String -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
@@ -372,7 +399,7 @@ spec = do
     it "deletes an existing timespan attribute" $ do
       initAttribute
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
-      getTimespans (10, 42) >>= assertJSONOK (firstTimespans specifiedsSet [])
+      getTimespans (10, 42) >>= assertJSONOK defaultTimespans
   describe "GET /clocks" $ do
     it "initially returns []" $
       get "/clocks" >>= assertJSONOK ()
@@ -404,11 +431,11 @@ spec = do
           guard  (begin <= end)
           return (begin, end)
       forM_ ranges $
-        getTimespans >=> assertJSONOK (firstTimespans specifiedsSet [])
+        getTimespans >=> assertJSONOK defaultTimespans
       forM_ ([("begin", x) | x <- begins] ++
              [("end",   x) | x <- ends]) $ \(p, v) ->
         get (B.concat ["/timespans?", p, "=", B8.pack $ show v]) >>=
-          assertJSONOK (firstTimespans specifiedsSet [])
+          assertJSONOK defaultTimespans
     it "returns [] for views that don't intersect any timespan" $ do
       initTimespan specifiedsSet
       forM_ [(0, 9), (43, 50)] $ getTimespans >=> assertJSONOK ()
@@ -421,10 +448,23 @@ spec = do
                                      [attributeEntity 1 1 "title" "test"])
     it "filters on parent" $ do
       initSubTimespan
-      get "/timespans" >>= assertJSONOK (firstTimespans specifiedsSet [])
+      get "/timespans" >>= assertJSONOK defaultTimespans
       get "/timespans?parent=1" >>=
         assertJSONOK [(subTimespanEntity, [] :: [()])]
-
+    it "returns [] asking for rubbish after inserting useful timespans" $ do
+      initTimespan specifiedsSet
+      get "/timespans?rubbish=2000-01-01" >>= assertJSONOK ()
+  describe "DELETE /timespans" $ do
+    it "rubbishes a timespan" $ do
+      initTimespan specifiedsSet
+      delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
+    it "returns the rubbished timespan" $ do
+      initTimespan specifiedsSet
+      delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
+      get "/timespans?rubbish=2000-01-01" >>= \r -> do
+        assertStatus 200 r
+        assertJSON ("a rubbished version of: " ++ showJSON defaultTimespans)
+                   r (rubbishP defaultTimespans)
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.
