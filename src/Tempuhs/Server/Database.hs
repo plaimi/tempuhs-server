@@ -53,7 +53,7 @@ runSqlPersistAPool :: SqlPersistA a -> ConnectionPool -> ActionE a
 runSqlPersistAPool x pool = runResourceT $ runNoLoggingT $ runSqlPool x pool
 
 getAttrs :: Entity Timespan -> SqlPersistA [Entity TimespanAttribute]
--- | 'getAttrs' returns returns a list of all 'TimespanAttribute's for a given
+-- | 'getAttrs' returns a list of all 'TimespanAttribute's for a given
 -- 'Timespan'.
 getAttrs e = selectList [TimespanAttributeTimespan ==. entityKey e] []
 

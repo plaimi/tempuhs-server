@@ -92,9 +92,9 @@ errNotFound :: Error
 errNotFound = MkError 404 "NOT_FOUND" "File not found"
 
 errInvalidParam :: T.Text -> Error
--- | 'errInvalidParam' is used when the specified request parameter is
+-- | 'errInvalidParam' is used when the specified request parametre is
 -- invalid.
-errInvalidParam = MkError 400 "INVALID_PARAM" . T.append "Invalid parameter: "
+errInvalidParam = MkError 400 "INVALID_PARAM" . T.append "Invalid parametre: "
 
 jsonPair :: ToJSON a => T.Text -> a -> ActionE ()
 -- | 'jsonPair' generates a JSON object with a single attribute-value pair.
