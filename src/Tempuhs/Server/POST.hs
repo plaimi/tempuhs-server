@@ -69,6 +69,7 @@ postTimespan p = do
   maybeEndMin   <- maybeParam     "endMin"
   maybeEndMax   <- maybeParam     "endMax"
   weight        <- defaultParam 1 "weight"
+  rubbish       <- return Nothing
 
   -- If beginMax isn't specified, set it to beginMin + 1
   let beginMax           = fromMaybe ((+( 1 :: ProperTime)) beginMin)
@@ -89,7 +90,7 @@ postTimespan p = do
     case maybeClock of
       Just (Entity clockKey _) ->
         let ts = Timespan (mkKey <$> parent) clockKey beginMin beginMax
-                 endMin endMax weight
+                          endMin endMax weight rubbish
         in  liftAE . jsonKey =<< case timespan of
           Just i  -> let k = mkKey i
                      in  repsert k ts >> return k

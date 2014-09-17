@@ -240,7 +240,8 @@ firstTimespanEntity :: Z.Set String -> Entity Timespan
 -- with the appropriate behaviour depending on which optionals are specified
 -- in the 'Z.Set' of specifieds.
 firstTimespanEntity ss =
-  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 10 beginMax endMin endMax 1
+  Entity (mkKey 1) $
+    Timespan Nothing (mkKey 1) 10 beginMax endMin endMax 1 Nothing
   where
     (beginMax, endMin, endMax) =
       case ("beginMax" `Z.member` ss
@@ -258,12 +259,13 @@ firstTimespanEntity ss =
 subTimespanEntity :: Entity Timespan
 -- | 'subTimespanEntity' is equal to the data inserted by 'initSubTimespan'.
 subTimespanEntity =
-  Entity (mkKey 2) $ Timespan (Just $ mkKey 1) (mkKey 1) (-9) (-8) 8 9 1
+  Entity (mkKey 2) $
+    Timespan (Just $ mkKey 1) (mkKey 1) (-9) (-8) 8 9 1 Nothing
 
 modTimespanEntity :: Entity Timespan
 -- | 'modTimespanEntity' is equal to the data inserted by 'initModTimespan'.
 modTimespanEntity =
-  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1
+  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1 Nothing
 
 firstTimespans :: Z.Set String -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
