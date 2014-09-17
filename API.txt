@@ -11,8 +11,18 @@ TT means terrestrial time:
 #######
 /timespans
 ==========
-Retrieve all timespans of a given clock that overlap the given time period, as
-well as the associated timespan attributes:
+Retrieves all timespans of a given clock that overlap the given time period,
+as well as the associated timespan attributes. With no given clock or time
+period, all top-level timespans are retrieved.
+
+The rubbish field is used to retrieve timespans marked as rubbish. It takes
+the timestamp of the earliest date to look for timespans at. The timestamp
+can be formatted in two ways. If you only need day-precision, use YYYY-MM-DD.
+If you additionally want seconds precision, add a 'T', followed by hh-mm-ss.
+
+Although it is possible to specify begin and end without specifying the clock,
+this is generally meaningless.
+
   parent: integer, optional -- ID of the parent timespan (returns top-level
                             -- timespans if not given)
   clock: string, optional -- the name of an existing clock
@@ -29,12 +39,15 @@ Get all top-level timespans:
 Get all top-level timespans between -30 and -20 on the TT clock:
   /timespans?begin=-30&end=-20&clock=TT
 
-Although it is possible to specify begin and end without specifying the clock,
-this is generally meaningless.
+Get all top-level timespans rubbished since April Fool's, 2015:
+  /timespans?rubbish=2015-04-01
+
+Get all top-level timespans rubbished since 02:34 at April Fool's, 2015:
+  /timespans?rubbish=2015-04-01T02-34-00
 
 /clocks
 =======
-Retrieve all clocks that match the given criteria:
+Retrieve all clocks that match the given criteria.
   name: string, optional -- the name of a clock
   id: integer, optional -- the ID of a clock
 
@@ -56,7 +69,7 @@ Get the clock with ID 1, if any:
 ########
 /timespans
 ==========
-Insert a new timespan:
+Insert a new or modify an existing timespan.
   timespan: integer, optional -- ID of the timespan to replace
   parent: integer, optional -- ID of the parent timespan if any
   clock: string -- the name of an existing clock
@@ -104,7 +117,7 @@ be inferred to. Consider the chart carefully before relying on optionals!
 
 /attributes
 ===========
-Set or remove an attribute for a given timespan:
+Set or remove an attribute for a given timespan.
   timespan: integer -- ID of timespan for which to change an attribute
   key: string -- the name of the attribute
   value: string, optional -- the new value if given, otherwise the
@@ -119,7 +132,7 @@ Remove the "Title" attribute from the timespan with ID 42:
 
 /clocks
 =======
-Insert a new clock:
+Insert a new clock.
   clock: integer, optional -- ID of the clock to replace
   name: string -- name used to identify the clock
 
