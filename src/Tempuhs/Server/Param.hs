@@ -47,14 +47,13 @@ import Tempuhs.Server.Spock
   ActionE,
   )
 
--- | 'ParsableTime' is an ADT wrapper for 'ParseTime', and an unorphaned
--- instance of 'Parsable'. This lets us conveniently dictate the allowed
--- formats for the rubbish field, and parse DELETEs of timespans.
-data ParseTime t => ParsableTime t = MkParsableTime
-                 {fromParsableTime :: t -- ^ Get the 'ParseTime'.
-                 }
+-- | 'ParsableWrapper' is an ADT wrapper that permits us to write unorphaned
+-- 'Parsable' instances.
+data ParsableWrapper a = ParsableWrap
+  {parsableUnwrap :: a -- ^ Unwrap the value.
+  }
 
-instance ParseTime t => Parsable (ParsableTime t)
+instance ParseTime t => Parsable (ParsableWrapper t)
   where parseParam p =
           let parseTimes t =
                 msum $ map (flip (parseTime defaultTimeLocale) t)
@@ -63,7 +62,7 @@ instance ParseTime t => Parsable (ParsableTime t)
                          ["%F"
                          ,"%FT%T"]
           in  case parseTimes (unpack p) of
-                Just pt -> Right $ MkParsableTime pt
+                Just pt -> Right $ ParsableWrap pt
                 Nothing -> Left  $ pack "Ill-formatted time string"
 
 maybeParam :: Parsable a => Text -> ActionE (Maybe a)

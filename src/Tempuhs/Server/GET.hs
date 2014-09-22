@@ -46,7 +46,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.Param
   (
-  ParsableTime (fromParsableTime),
+  ParsableWrapper (parsableUnwrap),
   maybeParam,
   )
 import Tempuhs.Server.Spock
@@ -64,12 +64,12 @@ timespans p = do
   begin   <- maybeParam "begin"
   end     <- maybeParam "end"
   rubbish <- maybeParam "rubbish"
-  let filters = (TimespanParent ==. (mkKey <$> parent))                :
+  let filters = (TimespanParent ==. (mkKey <$> parent))              :
                 (let (#) = case rubbish of
                              Just _  -> (>=.)
                              Nothing -> (==.)
-                 in  TimespanRubbish # (fromParsableTime <$> rubbish)) :
-                [TimespanBeginMin <=. x | x <- toList end]             ++
+                 in  TimespanRubbish # (parsableUnwrap <$> rubbish)) :
+                [TimespanBeginMin <=. x | x <- toList end]           ++
                 [TimespanEndMax   >=. x | x <- toList begin]
   runDatabase p $ do
     clockFilter <- case clock of
