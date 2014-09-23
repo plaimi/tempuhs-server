@@ -21,6 +21,7 @@ import Database.Persist
   (
   Entity (Entity),
   (=.),
+  entityKey,
   getBy,
   delete,
   insert,
@@ -31,14 +32,11 @@ import Database.Persist.Sql
   (
   ConnectionPool,
   )
-import Web.Scotty.Trans
-  (
-  raise,
-  )
 
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
+  clockParam,
   liftAE,
   mkKey,
   runDatabase,
@@ -52,7 +50,6 @@ import Tempuhs.Server.Param
 import Tempuhs.Server.Spock
   (
   ActionE,
-  errInvalidParam,
   jsonKey,
   jsonSuccess,
   )
@@ -63,7 +60,6 @@ postTimespan :: ConnectionPool -> ActionE ()
 postTimespan p = do
   timespan      <- maybeParam     "timespan"
   parent        <- maybeParam     "parent"
-  clock         <- paramE         "clock"
   beginMin      <- paramE         "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
   maybeEndMin   <- maybeParam     "endMin"
@@ -86,17 +82,13 @@ postTimespan p = do
           (Just a, Just b)   -> (a, b)
 
   runDatabase p $ do
-    maybeClock <- getBy $ UniqueClock clock
-    case maybeClock of
-      Just (Entity clockKey _) ->
-        let ts = Timespan (mkKey <$> parent) clockKey beginMin beginMax
-                          endMin endMax weight rubbish
-        in  liftAE . jsonKey =<< case timespan of
-          Just i  -> let k = mkKey i
-                     in  repsert k ts >> return k
-          Nothing -> insert ts
-      Nothing                  ->
-        liftAE $ raise $ errInvalidParam "clock"
+    clock <- clockParam "clock"
+    let ts = Timespan (mkKey <$> parent) (entityKey clock) beginMin beginMax
+             endMin endMax weight rubbish
+    liftAE . jsonKey =<< case timespan of
+      Just i  -> let k = mkKey i
+                 in  repsert k ts >> return k
+      Nothing -> insert ts
 
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.

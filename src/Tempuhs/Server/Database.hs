@@ -17,6 +17,7 @@ import Control.Monad.Trans.Resource
   runResourceT,
   )
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
 import Database.Persist
   (
   Entity,
@@ -25,6 +26,7 @@ import Database.Persist
   PersistValue (PersistInt64),
   (==.),
   entityKey,
+  getBy,
   keyFromValues,
   selectList,
   )
@@ -35,11 +37,20 @@ import Database.Persist.Sql
   runSqlPool,
   runMigration,
   )
+import Web.Scotty.Trans
+  (
+  raise,
+  )
 
 import Tempuhs.Chronology
+import Tempuhs.Server.Param
+  (
+  paramE,
+  )
 import Tempuhs.Server.Spock
   (
   ActionE,
+  errInvalidParam,
   )
 
 -- | A 'SqlPersistA' is a 'SqlPersistT' that can be run within an 'ActionE'.
@@ -69,3 +80,13 @@ liftAE :: ActionE a -> SqlPersistA a
 -- | 'liftAE' lifts a computation from the 'ActionE' monad into the
 -- 'SqlPersistA' monad.
 liftAE = lift . lift
+
+clockParam :: L.Text -> SqlPersistA (Entity Clock)
+-- | 'clockParam' looks up an 'Entity Clock' from the parametre of the given
+-- name, raising 'errInvalidParam' if there is no match.
+clockParam p = do
+  clock <- liftAE $ paramE p
+  maybeClock <- getBy $ UniqueClock clock
+  case maybeClock of
+    Just c  -> return c
+    Nothing -> liftAE $ raise $ errInvalidParam $ L.toStrict p

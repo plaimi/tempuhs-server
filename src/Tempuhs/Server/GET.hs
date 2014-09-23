@@ -23,7 +23,6 @@ import Database.Persist
   (==.),
   (>=.),
   entityKey,
-  getBy,
   selectList,
   )
 import Database.Persist.Sql
@@ -33,12 +32,13 @@ import Database.Persist.Sql
 import Web.Scotty.Trans
   (
   json,
-  raise,
   )
 
+import Plailude
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
+  clockParam,
   getAttrs,
   liftAE,
   mkKey,
@@ -48,11 +48,11 @@ import Tempuhs.Server.Param
   (
   ParsableWrapper (parsableUnwrap),
   maybeParam,
+  rescueMissing,
   )
 import Tempuhs.Server.Spock
   (
   ActionE,
-  errInvalidParam,
   )
 
 timespans :: ConnectionPool -> ActionE ()
@@ -60,7 +60,6 @@ timespans :: ConnectionPool -> ActionE ()
 -- associated 'TimespanAttribute's.
 timespans p = do
   parent  <- maybeParam "parent"
-  clock   <- maybeParam "clock"
   begin   <- maybeParam "begin"
   end     <- maybeParam "end"
   rubbish <- maybeParam "rubbish"
@@ -72,16 +71,10 @@ timespans p = do
                 [TimespanBeginMin <=. x | x <- toList end]           ++
                 [TimespanEndMax   >=. x | x <- toList begin]
   runDatabase p $ do
-    clockFilter <- case clock of
-      Just i  -> do
-        maybeClock <- getBy (UniqueClock i)
-        return $ (\x -> [TimespanClock ==. entityKey x]) <$> maybeClock
-      Nothing -> return $ Just []
-    case clockFilter of
-      Just cf -> do
-        list <- selectList (cf ++ filters) []
-        liftAE . json =<< mapM (\e -> (,) e <$> getAttrs e) list
-      Nothing -> liftAE $ raise $ errInvalidParam "clock"
+    clock <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
+    let clockFilter = [TimespanClock ==. entityKey c | c <- toList clock]
+    list <- selectList (clockFilter ++ filters) []
+    liftAE . json =<< mapM (\e -> (,) e <$> getAttrs e) list
 
 clocks :: ConnectionPool -> ActionE ()
 -- | 'clocks' serves a request for a list of 'Clock's.
