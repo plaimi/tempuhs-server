@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -11,15 +11,6 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Spock where
 
-import Control.Monad.Catch
-  (
-  MonadThrow,
-  throwM,
-  )
-import Control.Monad.IO.Class
-  (
-  liftIO,
-  )
 import Data.Aeson
   (
   ToJSON,
@@ -30,7 +21,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import Database.Persist
   (
-  KeyBackend
+  Key,
   )
 import Network.Wai
   (
@@ -67,9 +58,6 @@ instance ScottyError Error where
 
 -- | An 'ActionE' is an 'ActionT' with 'Error' as the exception type.
 type ActionE = ActionT Error IO
-
-instance MonadThrow ActionE where
-  throwM = liftIO . throwM
 
 -- | A 'ScottyE' is a 'ScottyT' with 'Error' as the exception type.
 type ScottyE = ScottyT Error IO
@@ -110,6 +98,6 @@ jsonError (MkError s c m) = do
   status $ toEnum s
   jsonPair "error" $ object ["code" .= c, "message" .= m]
 
-jsonKey :: KeyBackend backend entity -> ActionE ()
+jsonKey :: ToJSON (Key record) => Key record -> ActionE ()
 -- | 'jsonKey' generates a JSON representation of a database key.
 jsonKey = jsonPair "id"

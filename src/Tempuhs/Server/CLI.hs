@@ -7,6 +7,11 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.CLI where
 
+import Control.Monad.Logger
+  (
+  NoLoggingT (NoLoggingT),
+  runNoLoggingT,
+  )
 import Data.ByteString.Char8
   (
   pack,
@@ -79,7 +84,8 @@ options = MkConfig
 
 run :: Config -> IO ()
 -- | 'run' starts the server with the specified 'Config' options.
-run (MkConfig d c p) = withPostgresqlPool (pack d) c $ scottyE p . serve
+run (MkConfig d c p) = runNoLoggingT $
+  withPostgresqlPool (pack d) c $ NoLoggingT . scottyE p . serve
 
 cli :: IO ()
 -- | 'cli' starts the server with options from the command line.

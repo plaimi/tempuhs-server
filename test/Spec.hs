@@ -20,6 +20,11 @@ import Control.Monad.IO.Class
   (
   liftIO,
   )
+import Control.Monad.Logger
+  (
+  NoLoggingT (NoLoggingT),
+  runNoLoggingT,
+  )
 import Data.Aeson
   (
   FromJSON,
@@ -224,12 +229,12 @@ assertJSONError s c r = do
 runSqliteSession :: Session () -> IO ()
 -- | 'runSqliteSession' runs 'serve' with an empty in-memory database.
 runSqliteSession s =
-  withSqlitePool ":memory:" 1 $
-    \pool -> runSession s =<< scottyAppE (serve pool)
+  runNoLoggingT $ withSqlitePool ":memory:" 1 $
+    \pool -> NoLoggingT $ runSession s =<< scottyAppE (serve pool)
 
 jsonKey :: Integer -> Value
 -- | 'jsonKey' is the json representation of a database key.
-jsonKey k = object ["id" .= mkKey k]
+jsonKey k = object ["id" .= k]
 
 jsonSuccess :: Value
 -- | 'jsonSuccess' is the result of a successful operation without any data to
