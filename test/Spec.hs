@@ -365,6 +365,13 @@ it :: String -> Session () -> Spec
 -- | 'it' creates a 'Spec' item wrapped around 'runSqliteSession'.
 it label action = HS.it label $ hSilence [stderr] $ runSqliteSession action
 
+itReturnsMissingParam :: Session SResponse -> Spec
+-- | 'itReturnsMissingParam' is a convenience function that creates a 'Spec'
+-- item for responses that should fail with "MISSING_PARAM".
+itReturnsMissingParam s =
+  it "fails with MISSING_PARAM when required parametres are missing" $
+    s >>= assertJSONError 400 "MISSING_PARAM"
+
 spec :: Spec
 -- | 'spec' is the 'Spec' for the tempuhs web server application.
 spec = do
@@ -378,6 +385,7 @@ spec = do
       initClock
       post "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)
       post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 2)
+    itReturnsMissingParam $ post "/clocks" ""
   describe "POST /timespans" $ do
     forM_ (subsequences . Z.toList $ specifiedsSet) $
       \ss -> it ("inserts a timespan with key 1 specifying " ++
@@ -391,6 +399,7 @@ spec = do
       initModTimespan
       getTimespans (10, 42) >>=
         assertJSONOK [(modTimespanEntity, [] :: [()])]
+    itReturnsMissingParam $ post "/timespans" ""
   describe "POST /attributes" $ do
     it "inserts a timespan attribute with key 1"
       initAttribute
@@ -405,6 +414,7 @@ spec = do
       initAttribute
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
       getTimespans (10, 42) >>= assertJSONOK defaultTimespans
+    itReturnsMissingParam $ post "/attributes" ""
   describe "GET /clocks" $ do
     it "initially returns []" $
       get "/clocks" >>= assertJSONOK ()

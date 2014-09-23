@@ -84,6 +84,11 @@ errInvalidParam :: T.Text -> Error
 -- invalid.
 errInvalidParam = MkError 400 "INVALID_PARAM" . T.append "Invalid parametre: "
 
+errMissingParam :: T.Text -> Error
+-- | 'errMissingParam' is used when the specified request parametre is
+-- not found.
+errMissingParam = MkError 400 "MISSING_PARAM" . T.append "Missing parametre: "
+
 jsonPair :: ToJSON a => T.Text -> a -> ActionE ()
 -- | 'jsonPair' generates a JSON object with a single attribute-value pair.
 jsonPair t v = json $ object [t .= v]

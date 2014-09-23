@@ -33,7 +33,6 @@ import Database.Persist.Sql
   )
 import Web.Scotty.Trans
   (
-  param,
   raise,
   )
 
@@ -46,6 +45,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.Param
   (
+  paramE,
   defaultParam,
   maybeParam,
   )
@@ -63,8 +63,8 @@ postTimespan :: ConnectionPool -> ActionE ()
 postTimespan p = do
   timespan      <- maybeParam     "timespan"
   parent        <- maybeParam     "parent"
-  clock         <- param          "clock"
-  beginMin      <- param          "beginMin"
+  clock         <- paramE         "clock"
+  beginMin      <- paramE         "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
   maybeEndMin   <- maybeParam     "endMin"
   maybeEndMax   <- maybeParam     "endMax"
@@ -101,8 +101,8 @@ postTimespan p = do
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
 postAttribute p = do
-  timespan <- param      "timespan"
-  key      <- param      "key"
+  timespan <- paramE     "timespan"
+  key      <- paramE     "key"
   value    <- maybeParam "value"
   runDatabase p $
     let tsId = mkKey timespan
@@ -126,7 +126,7 @@ postClock :: ConnectionPool -> ActionE ()
 -- existing one, from a request.
 postClock p = do
   clock <- maybeParam "clock"
-  name  <- param "name"
+  name  <- paramE     "name"
   runDatabase p $
     let c = Clock name
     in  liftAE . jsonKey =<< case clock of

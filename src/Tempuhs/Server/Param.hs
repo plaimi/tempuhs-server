@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 Module      :  $Header$
 Description :  The tempuhs server parametre handling.
@@ -24,6 +26,7 @@ import Data.Text.Lazy
   Text,
   pack,
   unpack,
+  toStrict,
   )
 import Data.Time.Format
   (
@@ -37,14 +40,18 @@ import System.Locale
 import Web.Scotty.Trans
   (
   Parsable,
-  param,
+  params,
   parseParam,
+  raise,
   rescue,
   )
 
 import Tempuhs.Server.Spock
   (
   ActionE,
+  errInvalidParam,
+  errMissingParam,
+  errorCode,
   )
 
 -- | 'ParsableWrapper' is an ADT wrapper that permits us to write unorphaned
@@ -65,10 +72,27 @@ instance ParseTime t => Parsable (ParsableWrapper t)
                 Just pt -> Right $ ParsableWrap pt
                 Nothing -> Left  $ pack "Ill-formatted time string"
 
+paramE :: Parsable a => Text -> ActionE a
+-- | 'paramE' looks up a parametre, raising 'errInvalidParam' if it fails to
+-- parse the parametre and 'errMissingParam' if the parametre is not found.
+paramE k = do
+  val <- lookup k <$> params
+  case val of
+    Just v  -> either (\_ -> raiseE errInvalidParam) return $ parseParam v
+    Nothing -> raiseE errMissingParam
+  where raiseE e = raise $ e $ toStrict k
+
+rescueMissing :: ActionE a -> ActionE (Maybe a)
+-- | 'rescueMissing' takes an 'ActionE a' and returns 'Nothing' if
+-- 'errMissingParam' is raised, or 'Just a' if there are no exceptions.
+rescueMissing a = rescue (Just <$> a) $ \e -> case errorCode e of
+  "MISSING_PARAM"   -> return Nothing
+  _                 -> raise e
+
 maybeParam :: Parsable a => Text -> ActionE (Maybe a)
 -- | 'maybeParam' looks up a parametre and wraps it in a 'Maybe', returning
 -- 'Nothing' if the parametre is not found.
-maybeParam key = (Just <$> param key) `rescue` (\_ -> return Nothing)
+maybeParam = rescueMissing . paramE
 
 defaultParam :: Parsable a => a -> Text -> ActionE a
 -- | 'defaultParam' looks up a parametre and returns a default value if the
