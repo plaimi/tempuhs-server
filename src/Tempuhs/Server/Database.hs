@@ -24,6 +24,7 @@ import Database.Persist
   Key,
   PersistEntity,
   PersistValue (PersistInt64),
+  SelectOpt (Asc),
   (==.),
   entityKey,
   getBy,
@@ -64,7 +65,8 @@ runSqlPersistAPool x pool = runResourceT $ runSqlPool x pool
 getAttrs :: Entity Timespan -> SqlPersistA [Entity TimespanAttribute]
 -- | 'getAttrs' returns a list of all 'TimespanAttribute's for a given
 -- 'Timespan'.
-getAttrs e = selectList [TimespanAttributeTimespan ==. entityKey e] []
+getAttrs e = selectList [TimespanAttributeTimespan ==. entityKey e]
+                        [Asc TimespanAttributeId]
 
 mkKey :: PersistEntity record => Integer -> Key record
 -- | 'mkKey' is a convenience function for constructing a database key.

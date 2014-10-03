@@ -19,6 +19,7 @@ import Data.Functor
   )
 import Database.Persist
   (
+  SelectOpt (Asc),
   (<=.),
   (==.),
   (>=.),
@@ -73,7 +74,7 @@ timespans p = do
   runDatabase p $ do
     clock <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
     let clockFilter = [TimespanClock ==. entityKey c | c <- toList clock]
-    list <- selectList (clockFilter ++ filters) []
+    list <- selectList (clockFilter ++ filters) [Asc TimespanId]
     liftAE . json =<< mapM (\e -> (,) e <$> getAttrs e) list
 
 clocks :: ConnectionPool -> ActionE ()
@@ -83,4 +84,4 @@ clocks p = do
   cid  <- maybeParam "id"
   let filters = [ClockName ==. x | x <- toList name] ++
                   [ClockId ==. mkKey x | x <- toList cid]
-  runDatabase p $ liftAE . json =<< selectList filters []
+  runDatabase p $ liftAE . json =<< selectList filters [Asc ClockId]
