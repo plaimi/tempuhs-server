@@ -176,7 +176,7 @@ assertContentType ct r = assertBool msg $ Just ct == h
   where
     msg = "Expected content type:\t" ++ show ct ++
           "\nbut received:\t\t"      ++ fromMaybe "nothing" (show <$> h)
-    h   = lookup "content-type" $ simpleHeaders r
+    h   = B8.takeWhile (/= ';') <$> lookup "content-type" (simpleHeaders r)
 
 assertBody :: L.ByteString -> SResponse -> Session ()
 -- | 'assertBody' checks that the body of a response matches the expected
