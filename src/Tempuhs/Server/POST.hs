@@ -9,6 +9,16 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.POST where
 
+import Control.Arrow
+  (
+  (***),
+  first,
+  )
+import Control.Monad
+  (
+  forM_,
+  join,
+  )
 import Data.Maybe
   (
   fromMaybe,
@@ -31,6 +41,11 @@ import Database.Persist
 import Database.Persist.Sql
   (
   ConnectionPool,
+  )
+import qualified Data.Text.Lazy as L
+import Web.Scotty.Trans
+  (
+  params,
   )
 
 import Tempuhs.Chronology
@@ -55,8 +70,9 @@ import Tempuhs.Server.Spock
   )
 
 postTimespan :: ConnectionPool -> ActionE ()
--- | 'postTimespan' inserts a new 'Timespan' into the database, or updates an
--- existing one, from a request.
+-- | 'postTimespan' inserts a new 'Timespan' into the database with the given
+-- attributes. Or, if the ID of an existing 'Timespan' is given, updates that
+-- instead.
 postTimespan p = do
   timespan      <- maybeParam     "timespan"
   parent        <- maybeParam     "parent"
@@ -66,6 +82,9 @@ postTimespan p = do
   maybeEndMax   <- maybeParam     "endMax"
   weight        <- defaultParam 1 "weight"
   rubbish       <- return Nothing
+  -- If it ends with an '_', consider it an attribute. "&foo_=fu&bar_=baz".
+  -- attrs is a list of key-value tuples.
+  attrs         <- filter (L.isSuffixOf "_" . fst) <$> params
 
   -- If beginMax isn't specified, set it to beginMin + 1
   let beginMax           = fromMaybe ((+( 1 :: ProperTime)) beginMin)
@@ -88,7 +107,12 @@ postTimespan p = do
     liftAE . jsonKey =<< case timespan of
       Just i  -> let k = mkKey i
                  in  repsert k ts >> return k
-      Nothing -> insert ts
+      Nothing -> do
+        tid <- insert ts
+        forM_ attrs $
+          insert . uncurry (TimespanAttribute tid)
+          . join (***) L.toStrict . first L.init
+        return tid
 
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.

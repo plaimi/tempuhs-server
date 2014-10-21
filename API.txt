@@ -79,6 +79,8 @@ Insert a new or modify an existing timespan.
   endMax: float, optional -- highest estimate of end time
   weight: float, default 1 -- general factor for determining the
                            -- importance/relevance of a timespan
+  *_: string -- anything that ends with a '_' is considered an attribute. See
+                the examples for more information.
 
 Optionals chart:
 +--------------------------------------------------------+
@@ -111,6 +113,10 @@ Post timespan that begins at 5, and ends at 6, with the TT clock:
 
 Post timespan that begins at 5 with the TT clock:
   beginMin=5.0&clock=TT
+
+Post timespan that begins at 5 with the TT clock, with attributes "foo" =
+"fu", and "bar" = "baz":
+  beginMin=5.0&clock=TT&foo_=fu&bar_=baz
 
 Consult the optionals chart for what the values of beginEnd/endMin/endMax will
 be inferred to. Consider the chart carefully before relying on optionals!

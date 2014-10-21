@@ -9,11 +9,16 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Main where
 
+import Control.Arrow
+  (
+  (***),
+  )
 import Control.Monad
   (
   (>=>),
   forM_,
   guard,
+  join,
   mzero,
   )
 import Control.Monad.IO.Class
@@ -56,10 +61,7 @@ import Data.Maybe
   isJust,
   )
 import qualified Data.Set as Z
-import Data.Text
-  (
-  Text,
-  )
+import qualified Data.Text as T
 import Database.Persist
   (
   Entity (Entity),
@@ -126,10 +128,17 @@ import Tempuhs.Server.Spock
   scottyAppE,
   )
 
+type AttributeKey   = String
+type AttributeValue = String
+type Specified      = String
 
-specifiedsSet :: Z.Set String
+specifiedsSet :: Z.Set Specified
 -- | A 'Z.Set' of all optional values that are specified.
 specifiedsSet = Z.fromList ["beginMax", "endMin", "endMax"]
+
+attributesList :: [(AttributeKey, AttributeValue)]
+-- | A '[(AttributeKey, AttributeValue)]' of attributes for testing.
+attributesList = [("foo", "fu"), ("bar", "baz")]
 
 formPostRequest :: Request
 -- | 'formPostRequest' is a blank POST request for use with URL-encoded form
@@ -213,7 +222,7 @@ assertJSONOK :: ToJSON a => a -> SResponse -> Session ()
 assertJSONOK v r =
   assertStatus 200 r >> assertJSON (showJSON v) r (toJSON v ==)
 
-assertJSONError :: Int -> Text -> SResponse -> Session ()
+assertJSONError :: Int -> T.Text -> SResponse -> Session ()
 -- | 'assertJSONError' checks that a response is a JSON-encoded error message
 -- matching the expected status and error codes.
 assertJSONError s c r = do
@@ -241,7 +250,7 @@ jsonSuccess :: Value
 -- return.
 jsonSuccess = object []
 
-clockEntity :: Integer -> Text -> Entity Clock
+clockEntity :: Integer -> T.Text -> Entity Clock
 -- | 'clockEntity' is a convenience function for constructing an 'Entity'
 -- containing a 'Clock'.
 clockEntity k = Entity (mkKey k) . Clock
@@ -261,10 +270,10 @@ rubbishP [] []                                          = True
 rubbishP _  []                                          = False
 rubbishP []  _                                          = False
 
-firstTimespanEntity :: Z.Set String -> Entity Timespan
+firstTimespanEntity :: Z.Set Specified -> Entity Timespan
 -- | 'firstTimespanEntity' is equal to the data inserted by 'initTimespan'
 -- with the appropriate behaviour depending on which optionals are specified
--- in the 'Z.Set' of specifieds.
+-- in the 'Z.Set' of 'Specified's.
 firstTimespanEntity ss =
   Entity (mkKey 1) $
     Timespan Nothing (mkKey 1) 10 beginMax endMin endMax 1 Nothing
@@ -298,15 +307,15 @@ defaultTimespans :: [(Entity Timespan, [Entity TimespanAttribute])]
 -- with 'specifedsSet' and '[]'.
 defaultTimespans = firstTimespans specifiedsSet []
 
-firstTimespans :: Z.Set String -> [Entity TimespanAttribute] ->
+firstTimespans :: Z.Set Specified -> [Entity TimespanAttribute] ->
                   [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'firstTimespans' is the expected response for a timespan query that
 -- matches what 'initTimespan' inserted, depending on which fields are to be
--- left unspecified per the 'Z.Set' of specifieds, and the given
+-- left unspecified per the 'Z.Set' of 'Specified's, and the given
 -- '[Entity TimespanAttribute]'.
 firstTimespans ss attrs = [(firstTimespanEntity ss, attrs)]
 
-attributeEntity :: Integer -> Integer -> Text -> Text ->
+attributeEntity :: Integer -> Integer -> T.Text -> T.Text ->
                    Entity TimespanAttribute
 -- | 'attributeEntity' is a convenience function for constructing
 -- an 'Entity' containing a 'TimespanAttribute'.
@@ -317,9 +326,9 @@ initClock :: Session ()
 -- response.
 initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 
-initTimespan :: Z.Set String -> Session ()
+initTimespan :: Z.Set Specified -> Session ()
 -- | 'initTimeSpan' does 'initClock', then inserts a timespan specifying the
--- optionals that are members of the 'Z.Set' of specifieds (falling back to
+-- optionals that are members of the 'Z.Set' of 'Specified's (falling back to
 -- default values for optionals not in the set), and checks the response.
 initTimespan ss =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
@@ -338,6 +347,16 @@ initSubTimespan =
   where
     body =
       "parent=1&clock=TT&beginMin=-9.0&beginMax=-8.0&endMin=8.0&endMax=9.0"
+
+initTimespanWithAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
+-- | 'initTimespanWithAttrs' posts a 'Timespan' with the given list of
+-- 'AttributeKey's and 'AttributeValue's.
+initTimespanWithAttrs as =
+  initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
+  where
+    body             = L8.pack $ "clock=TT&beginMin=10.0" ++ build as
+    build ((k,v):xs) = '&' : k ++ "_=" ++ v ++ build xs
+    build []         = []
 
 initModTimespan :: Session ()
 -- | 'initModTimespan' does 'initTimespan', then modifies the existing
@@ -395,6 +414,13 @@ spec = do
           assertJSONOK (firstTimespans (Z.fromList ss) [])
     it "successfully inserts a sub-timespan"
       initSubTimespan
+    it "successfully inserts a timespan with attributes" $ do
+      initTimespanWithAttrs attributesList
+      getTimespans (10, 42) >>=
+        assertJSONOK (firstTimespans Z.empty
+          [attributeEntity i 1 k v
+          | (i, (k, v)) <- zip [1 .. ] $
+                               map (join (***) T.pack) attributesList])
     it "modifies an existing timespan" $ do
       initModTimespan
       getTimespans (10, 42) >>=
