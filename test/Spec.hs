@@ -9,16 +9,11 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Main where
 
-import Control.Arrow
-  (
-  (***),
-  )
 import Control.Monad
   (
   (>=>),
   forM_,
   guard,
-  join,
   mzero,
   )
 import Control.Monad.IO.Class
@@ -419,8 +414,7 @@ spec = do
       getTimespans (10, 42) >>=
         assertJSONOK (firstTimespans Z.empty
           [attributeEntity i 1 k v
-          | (i, (k, v)) <- zip [1 .. ] $
-                               map (join (***) T.pack) attributesList])
+          | (i, (k, v)) <- zip [1 .. ] $ map (both T.pack) attributesList])
     it "modifies an existing timespan" $ do
       initModTimespan
       getTimespans (10, 42) >>=

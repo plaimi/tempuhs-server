@@ -11,13 +11,11 @@ Maintainer  :  tempuhs@plaimi.net
 
 import Control.Arrow
   (
-  (***),
   first,
   )
 import Control.Monad
   (
   forM_,
-  join,
   )
 import Data.Maybe
   (
@@ -48,6 +46,7 @@ import Web.Scotty.Trans
   params,
   )
 
+import Plailude
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
@@ -111,7 +110,7 @@ postTimespan p = do
         tid <- insert ts
         forM_ attrs $
           insert . uncurry (TimespanAttribute tid)
-          . join (***) L.toStrict . first L.init
+          . both L.toStrict . first L.init
         return tid
 
 postAttribute :: ConnectionPool -> ActionE ()
