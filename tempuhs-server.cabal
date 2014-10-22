@@ -54,6 +54,17 @@ executable tempuhs-server
 test-suite spec
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
+  other-modules:       DELETE
+                       GET
+                       POST
+                       Spoc
+                       Spoc.Assert
+                       Spoc.Default
+                       Spoc.Entity
+                       Spoc.Init
+                       Spoc.JSON
+                       Spoc.Request
+                       Spoc.Type
   other-extensions:    OverloadedStrings
   build-depends:       aeson >=0.7 && <0.8,
                        base >=4.6 && <4.8,
