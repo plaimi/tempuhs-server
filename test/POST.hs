@@ -21,14 +21,12 @@ import Data.List
   subsequences,
   )
 import qualified Data.Set as Z
-import qualified Data.Text as T
 import Test.Hspec
   (
   Spec,
   describe,
   )
 
-import Plailude
 import Spoc
   (
   it,
@@ -46,20 +44,19 @@ import Spoc.Default
   )
 import Spoc.Entity
   (
-  attributeEntity,
-  defaultTimespans,
-  firstTimespans,
-  modTimespanEntity,
+  timespanEntity,
+  timespansAttrs,
+  timespansSpecs,
+  timespansSpecsAttrs,
   )
 import Spoc.Init
   (
   initAttribute,
   initClock,
   initModTimespan,
-  initModTimespanWithAttrs,
   initSubTimespan,
-  initTimespan,
-  initTimespanWithAttrs,
+  initTimespanAttrs,
+  initTimespanSpecs,
   )
 import Spoc.JSON
   (
@@ -96,28 +93,21 @@ timespansSpec = do
     forM_ (subsequences . Z.toList $ specifieds) $
       \ss -> it ("inserts a timespan with key 1 specifying " ++
                   intercalate "/" ss) $ do
-        initTimespan $ Z.fromList ss
+        initTimespanSpecs (Z.fromList ss)
         getTimespans (10, 42) >>=
-          assertJSONOK (firstTimespans (Z.fromList ss) [])
+          assertJSONOK (timespansSpecs (Z.fromList ss))
     it "successfully inserts a sub-timespan"
       initSubTimespan
     it "successfully inserts a timespan with attributes" $ do
-      initTimespanWithAttrs attributes
+      initTimespanAttrs attributes
       assertTimespanWithAttrs
-    it "modifies an existing timespan" $ do
-      initModTimespan
-      getTimespans (10, 42) >>=
-        assertJSONOK [(modTimespanEntity, [] :: [()])]
-    itReturnsMissingParam $ post "/timespans" ""
     it "modifies an existing timespan and its attributes" $ do
-      initModTimespanWithAttrs attributes
+      initModTimespan
       assertTimespanWithAttrs
     itReturnsMissingParam $ post "/timespans" ""
   where assertTimespanWithAttrs = do
           getTimespans (10, 42) >>=
-            assertJSONOK (firstTimespans Z.empty
-              [attributeEntity i 1 k v
-              | (i, (k, v)) <- zip [1 .. ] $ map (both T.pack) attributes])
+            assertJSONOK (timespansAttrs attributes)
 
 attributesSpec :: Spec
 attributesSpec = do
@@ -129,10 +119,10 @@ attributesSpec = do
       post "/attributes" "timespan=1&key=title&value=new" >>=
         assertJSONOK (jsonKey 1)
       getTimespans (10, 42) >>=
-        assertJSONOK (firstTimespans specifieds
-                                     [attributeEntity 1 1 "title" "new"])
+        assertJSONOK (timespansSpecsAttrs specifieds [("title", "new")])
     it "deletes an existing timespan attribute" $ do
       initAttribute
       post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
-      getTimespans (10, 42) >>= assertJSONOK defaultTimespans
+      getTimespans (10, 42) >>=
+        assertJSONOK [(timespanEntity specifieds, [] :: [()])]
     itReturnsMissingParam $ post "/attributes" ""

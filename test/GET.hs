@@ -39,18 +39,17 @@ import Spoc.Default
   )
 import Spoc.Entity
   (
-  attributeEntity,
   clockEntity,
   defaultTimespans,
-  firstTimespans,
-  subTimespanEntity,
+  specialTimespan,
+  timespansSpecsAttrs,
   )
 import Spoc.Init
   (
   initAttribute,
   initClock,
+  initDefaultTimespan,
   initSubTimespan,
-  initTimespan,
   )
 import Spoc.Request
   (
@@ -88,7 +87,7 @@ timespansSpec = do
       initClock
       get "/timespans?clock=TT&begin=0&end=0" >>= assertJSONOK ()
     it "returns all timespans that touch or intersect the view" $ do
-      initTimespan specifieds
+      initDefaultTimespan
       let
         begins = [9, 10, 11, 41, 42]
         ends   = [10, 11, 41, 42, 43]
@@ -104,20 +103,18 @@ timespansSpec = do
         get (B.concat ["/timespans?", p, "=", B8.pack $ show v]) >>=
           assertJSONOK defaultTimespans
     it "returns [] for views that don't intersect any timespan" $ do
-      initTimespan specifieds
+      initDefaultTimespan
       forM_ [(0, 9), (43, 50)] $ getTimespans >=> assertJSONOK ()
       forM_ ["begin=43", "end=9"] $
         get . B.append "/timespans?" >=> assertJSONOK ()
     it "returns associated timespan attributes" $ do
       initAttribute
       getTimespans (10, 42) >>=
-        assertJSONOK (firstTimespans specifieds
-                                     [attributeEntity 1 1 "title" "test"])
+        assertJSONOK (timespansSpecsAttrs specifieds [("title", "test")])
     it "filters on parent" $ do
       initSubTimespan
-      get "/timespans" >>= assertJSONOK defaultTimespans
       get "/timespans?parent=1" >>=
-        assertJSONOK [(subTimespanEntity, [] :: [()])]
+        assertJSONOK [(specialTimespan (Just 1), [] :: [()])]
     it "returns [] asking for rubbish after inserting useful timespans" $ do
-      initTimespan specifieds
+      initDefaultTimespan
       get "/timespans?rubbish=2000-01-01" >>= assertJSONOK ()

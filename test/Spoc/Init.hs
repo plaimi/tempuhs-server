@@ -22,6 +22,7 @@ import Spoc.Assert
   )
 import Spoc.Default
   (
+  attributes,
   specifieds,
   )
 import Spoc.JSON
@@ -45,58 +46,59 @@ initClock :: Session ()
 -- response.
 initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 
-initTimespan :: Z.Set Specified -> Session ()
+initTimespan :: Z.Set Specified -> [(AttributeKey, AttributeValue)]
+             -> Session ()
 -- | 'initTimeSpan' does 'initClock', then inserts a timespan specifying the
 -- optionals that are members of the 'Z.Set' of 'Specified's (falling back to
 -- default values for optionals not in the set), and checks the response.
-initTimespan ss =
+-- 'TimespanAttribute's are inserted based on the given list of
+-- 'AttributeKey'-'AttributeValue'-pairs.
+initTimespan ss as =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where body = L8.pack . concat $
           ["clock=TT&beginMin=10.0"]                  ++
           ["&beginMax=15" | "beginMax" `Z.member` ss] ++
           ["&endMin=24"   | "endMin"   `Z.member` ss] ++
-          ["&endMax=42"   | "endMax"   `Z.member` ss]
+          ["&endMax=42"   | "endMax"   `Z.member` ss] ++
+          [buildAttribute as]
+
+initTimespanAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
+-- | 'initTimespanAttrs' does 'initTimespan' without 'Specified's.
+initTimespanAttrs = initTimespan Z.empty
+
+initTimespanSpecs :: Z.Set Specified -> Session ()
+-- | 'initTimespanSpecs' does 'initTimespan' without 'TimespanAttribute's.
+initTimespanSpecs = flip initTimespan []
+
+initDefaultTimespan :: Session ()
+-- | 'initDefaultTimespan' inserts a default 'Timespan'.
+initDefaultTimespan = initTimespan specifieds attributes
 
 initModTimespan :: Session ()
--- | 'initModTimespan' does 'initTimespan', then modifies the existing
--- timespan and checks the response.
+-- | 'initModTimespan' posts a 'Timespan', then modifies the existing timespan
+-- and checks the response.
 initModTimespan =
-  initTimespan specifieds >>
-    post "/timespans" body >>= assertJSONOK (jsonKey 1)
-  where body = "timespan=1&clock=TT&beginMin=0&beginMax=1&endMin=9&endMax=10"
-
-initModTimespanWithAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
--- | 'initModTimespanWithAttrs' posts a 'Timespan', then modifies the
--- existing timespan, updating its attributes based on 'as', and checks the
--- response.
-initModTimespanWithAttrs as =
-  initTimespan specifieds >>
+  initDefaultTimespan >>
     post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where
-    body = L8.pack $ "timespan=1&clock=TT&beginMin=10.0" ++ buildAttribute as
+    body =
+      L8.pack $ "timespan=1&clock=TT&beginMin=10.0" ++
+                buildAttribute attributes
 
 initSubTimespan :: Session ()
--- | 'initSubTimespan' does 'initTimespan', then inserts another timespan with
--- the first timespan as parent and checks the response.
+-- | 'initSubTimespan' does 'initDefaultTimespan', then inserts another
+-- timespan with the first timespan as parent and checks the response.
 initSubTimespan =
-  initTimespan specifieds >>
+  initDefaultTimespan >>
     post "/timespans" body >>= assertJSONOK (jsonKey 2)
   where
     body =
-      "parent=1&clock=TT&beginMin=-9.0&beginMax=-8.0&endMin=8.0&endMax=9.0"
-
-initTimespanWithAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
--- | 'initTimespanWithAttrs' posts a 'Timespan' with the given list of
--- 'AttributeKey's and 'AttributeValue's.
-initTimespanWithAttrs as =
-  initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
-  where
-    body             = L8.pack $ "clock=TT&beginMin=10.0" ++ buildAttribute as
+      "parent=1&clock=TT&beginMin=-10.0"
 
 initAttribute :: Session ()
--- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
--- and checks the response.
+-- | 'initAttribute' does 'initTimespanSpecs', then inserts a timespan
+-- attribute and checks the response.
 initAttribute =
-  initTimespan specifieds >>
+  initTimespanSpecs specifieds >>
     post "/attributes" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&key=title&value=test"

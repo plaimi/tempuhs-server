@@ -27,10 +27,6 @@ import Spoc.Assert
   assertJSONOK,
   assertStatus,
   )
-import Spoc.Default
-  (
-  specifieds,
-  )
 import Spoc.Entity
   (
   defaultTimespans,
@@ -38,7 +34,7 @@ import Spoc.Entity
   )
 import Spoc.Init
   (
-  initTimespan,
+  initDefaultTimespan,
   )
 import Spoc.JSON
   (
@@ -59,10 +55,10 @@ timespansSpec :: Spec
 timespansSpec = do
   describe "DELETE /timespans" $ do
     it "rubbishes a timespan" $ do
-      initTimespan specifieds
+      initDefaultTimespan
       delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
     it "returns the rubbished timespan" $ do
-      initTimespan specifieds
+      initDefaultTimespan
       delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
       get "/timespans?rubbish=2000-01-01" >>= \r -> do
         assertStatus 200 r

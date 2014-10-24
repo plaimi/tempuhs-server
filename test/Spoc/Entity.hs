@@ -11,6 +11,10 @@ import Data.Aeson
   (
   toJSON,
   )
+import Data.Functor
+  (
+  (<$>),
+  )
 import Data.Maybe
   (
   isJust,
@@ -25,10 +29,13 @@ import qualified Data.Text as T
 import Plailude
 import Spoc.Default
   (
+  attributes,
   specifieds,
   )
 import Spoc.Type
   (
+  AttributeKey,
+  AttributeValue,
   Specified,
   )
 import Tempuhs.Chronology
@@ -48,11 +55,10 @@ attributeEntity :: Integer -> Integer -> T.Text -> T.Text ->
 -- an 'Entity' containing a 'TimespanAttribute'.
 attributeEntity k = Entity (mkKey k) .:. (TimespanAttribute . mkKey)
 
-firstTimespanEntity :: Z.Set Specified -> Entity Timespan
--- | 'firstTimespanEntity' is equal to the data inserted by
--- 'Init.initTimespan' with the appropriate behaviour depending on which
--- optionals are specified in the 'Z.Set' of 'Specified's.
-firstTimespanEntity ss =
+timespanEntity :: Z.Set Specified -> Entity Timespan
+-- | 'timespanEntity' is a convenience function for constructing
+-- an 'Entity' containing a 'Timespan', based on the passed in 'Specified's.
+timespanEntity ss =
   Entity (mkKey 1) $
     Timespan Nothing (mkKey 1) 10 beginMax endMin endMax 1 Nothing
   where
@@ -69,31 +75,40 @@ firstTimespanEntity ss =
         (False, False, True)  -> (11, 41, 42)
         (True,  True,  True)  -> (15, 24, 42)
 
-modTimespanEntity :: Entity Timespan
--- | 'modTimespanEntity' is equal to the data inserted by
--- 'Init.initModTimespan'.
-modTimespanEntity =
-  Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 1 9 10 1 Nothing
+timespansSpecsAttrs :: Z.Set Specified
+                   -> [(AttributeKey, AttributeValue)]
+                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+-- | 'timespansSpecsAttrs' constructs a list of pairs. The first member is an
+-- 'Entity' with a 'Timespan'. The second is a list of 'Entity's with
+-- 'TimespanAttribute's. The 'Timespan' respects the passed 'Specified's. The
+-- 'TimespanAttribute's respects the passed list of pairs of 'AttributeKey's
+-- and 'AttributeValue's.
+timespansSpecsAttrs ss as =
+  [(timespanEntity ss
+   ,[ attributeEntity i 1 k v
+    | (i, (k, v)) <- [1 .. ] `zip` map (both T.pack) as ])]
 
-subTimespanEntity :: Entity Timespan
--- | 'subTimespanEntity' is equal to the data inserted by
--- 'Init.initSubTimespan'.
-subTimespanEntity =
+timespansSpecs :: Z.Set Specified
+                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+-- | 'timespansSpecs' does 'timespansSpecsAttrs' without 'TimespanAttribute's.
+timespansSpecs = flip timespansSpecsAttrs []
+
+timespansAttrs :: [(AttributeKey, AttributeValue)]
+                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+-- | 'timespansAttrs' does 'timespansSpecsAttrs' without 'Specified's
+timespansAttrs = timespansSpecsAttrs Z.empty
+
+defaultTimespans:: [(Entity Timespan, [Entity TimespanAttribute])]
+-- | 'defaultTimespans' is a helper value for the often used
+-- 'Init.initDefaultTimespan'.
+defaultTimespans = timespansSpecsAttrs specifieds attributes
+
+specialTimespan :: Maybe Integer -> Entity Timespan
+-- | 'specialTimespan' is a convenience 'Timespan' that's easy to distinguish
+-- from 'defaultTimespans'.
+specialTimespan p =
   Entity (mkKey 2) $
-    Timespan (Just $ mkKey 1) (mkKey 1) (-9) (-8) 8 9 1 Nothing
-
-firstTimespans :: Z.Set Specified -> [Entity TimespanAttribute] ->
-                  [(Entity Timespan, [Entity TimespanAttribute])]
--- | 'firstTimespans' is the expected response for a timespan query that
--- matches what 'Init.initTimespan' inserted, depending on which fields are to
--- be left unspecified per the 'Z.Set' of 'Specified's, and the given
--- '[Entity TimespanAttribute]'.
-firstTimespans ss attrs = [(firstTimespanEntity ss, attrs)]
-
-defaultTimespans :: [(Entity Timespan, [Entity TimespanAttribute])]
--- | 'defaultTimespans' is a helper value for the often used 'firstTimespans'
--- with 'specifedsSet' and '[]'.
-defaultTimespans = firstTimespans specifieds []
+         Timespan (mkKey <$> p) (mkKey 1) (-10) (-9) (-10) (-9) 1 Nothing
 
 rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])] ->
             [(Entity Timespan, [Entity TimespanAttribute])] ->
