@@ -12,10 +12,7 @@ Maintainer  :  tempuhs@plaimi.net
 import Control.Arrow
   (
   first,
-  )
-import Control.Monad
-  (
-  forM_,
+  second,
   )
 import Data.Maybe
   (
@@ -28,6 +25,7 @@ import Data.Functor
 import Database.Persist
   (
   Entity (Entity),
+  Key,
   (=.),
   entityKey,
   getBy,
@@ -40,6 +38,7 @@ import Database.Persist.Sql
   (
   ConnectionPool,
   )
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import Web.Scotty.Trans
   (
@@ -47,9 +46,10 @@ import Web.Scotty.Trans
   )
 
 import Plailude
-import Tempuhs.Chronology
+import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
+  SqlPersistA,
   clockParam,
   liftAE,
   mkKey,
@@ -103,14 +103,16 @@ postTimespan p = do
     clock <- clockParam "clock"
     let ts = Timespan (mkKey <$> parent) (entityKey clock) beginMin beginMax
              endMin endMax weight rubbish
+    let as = map (both L.toStrict . first L.init) attrs
     liftAE . jsonKey =<< case timespan of
-      Just i  -> let k = mkKey i
-                 in  repsert k ts >> return k
+      Just i  -> do
+        let k = mkKey i
+        repsert k ts
+        mapM_ (uncurry (updateAttribute k) . second Just) as
+        return k
       Nothing -> do
         tid <- insert ts
-        forM_ attrs $
-          insert . uncurry (TimespanAttribute tid)
-          . both L.toStrict . first L.init
+        mapM_ (insert . uncurry (TimespanAttribute tid)) as
         return tid
 
 postAttribute :: ConnectionPool -> ActionE ()
@@ -119,22 +121,7 @@ postAttribute p = do
   timespan <- paramE     "timespan"
   key      <- paramE     "key"
   value    <- maybeParam "value"
-  runDatabase p $
-    let tsId = mkKey timespan
-    in do
-      maybeAttribute <- getBy $ UniqueTimespanAttribute tsId key
-      case value of
-        Just v  ->
-          liftAE . jsonKey =<< case maybeAttribute of
-            Just (Entity attrId _) ->
-              update attrId [TimespanAttributeValue =. v] >> return attrId
-            Nothing                ->
-              insert $ TimespanAttribute tsId key v
-        Nothing -> do
-          case maybeAttribute of
-            Just (Entity attrId _) -> delete attrId
-            Nothing                -> return ()
-          liftAE jsonSuccess
+  runDatabase p $ updateAttribute (mkKey timespan) key value
 
 postClock :: ConnectionPool -> ActionE ()
 -- | 'postClock' inserts a new 'Clock' into the database, or updates an
@@ -148,3 +135,31 @@ postClock p = do
       Just i  -> let k = mkKey i
                  in  repsert k c >> return k
       Nothing -> insert c
+
+updateAttribute :: Key Timespan -> T.Text -> Maybe T.Text -> SqlPersistA ()
+-- | 'updateAttribute' updates the 'TimespanAttribute' of a 'Timespan'. It
+-- takes a 'Key Timespan', which is the ID of the 'Timespan' the attribute is
+-- related to, a key, and a 'Maybe' value. If the key already exists in the
+-- database, it is updated. If not, it is inserted. If the value is 'Nothing',
+-- the key is deleted if it exists. If the 'Timespan' does not exist, nothing
+-- happens.
+updateAttribute tid k v = do
+    ma <- getBy $ UniqueTimespanAttribute tid k
+    case v of
+      Nothing -> deleteAttribute ma
+      Just w  -> liftAE . jsonKey =<<
+        case ma of
+          Just (Entity aid _) -> do
+            update aid [TimespanAttributeValue =. w]
+            return aid
+          Nothing -> insert $ TimespanAttribute tid k w
+
+deleteAttribute :: Maybe (Entity TimespanAttribute) -> SqlPersistA ()
+-- | 'deleteAttribute' takes a 'Maybe' attribute and deletes it if it's 'Just'
+-- an attribute. If it's 'Nothing' this means the attribute doesn't exist in
+-- the database, so nothing happens.
+deleteAttribute a = do
+  case a of
+    Just (Entity aid _) -> delete aid
+    Nothing             -> return ()
+  liftAE jsonSuccess

@@ -56,6 +56,7 @@ import Spoc.Init
   initAttribute,
   initClock,
   initModTimespan,
+  initModTimespanWithAttrs,
   initSubTimespan,
   initTimespan,
   initTimespanWithAttrs,
@@ -102,15 +103,21 @@ timespansSpec = do
       initSubTimespan
     it "successfully inserts a timespan with attributes" $ do
       initTimespanWithAttrs attributes
-      getTimespans (10, 42) >>=
-        assertJSONOK (firstTimespans Z.empty
-          [attributeEntity i 1 k v
-          | (i, (k, v)) <- zip [1 .. ] $ map (both T.pack) attributes])
+      assertTimespanWithAttrs
     it "modifies an existing timespan" $ do
       initModTimespan
       getTimespans (10, 42) >>=
         assertJSONOK [(modTimespanEntity, [] :: [()])]
     itReturnsMissingParam $ post "/timespans" ""
+    it "modifies an existing timespan and its attributes" $ do
+      initModTimespanWithAttrs attributes
+      assertTimespanWithAttrs
+    itReturnsMissingParam $ post "/timespans" ""
+  where assertTimespanWithAttrs = do
+          getTimespans (10, 42) >>=
+            assertJSONOK (firstTimespans Z.empty
+              [attributeEntity i 1 k v
+              | (i, (k, v)) <- zip [1 .. ] $ map (both T.pack) attributes])
 
 attributesSpec :: Spec
 attributesSpec = do

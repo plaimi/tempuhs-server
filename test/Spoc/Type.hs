@@ -10,3 +10,7 @@ Maintainer  :  tempuhs@plaimi.net
 type AttributeKey   = String
 type AttributeValue = String
 type Specified      = String
+
+buildAttribute :: [(AttributeKey, AttributeValue)] -> String
+buildAttribute ((k,v):xs) = '&' : k ++ "_=" ++ v ++ buildAttribute xs
+buildAttribute []         = []

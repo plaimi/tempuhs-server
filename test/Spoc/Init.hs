@@ -37,6 +37,7 @@ import Spoc.Type
   AttributeKey,
   AttributeValue,
   Specified,
+  buildAttribute,
   )
 
 initClock :: Session ()
@@ -64,6 +65,16 @@ initModTimespan =
     post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&clock=TT&beginMin=0&beginMax=1&endMin=9&endMax=10"
 
+initModTimespanWithAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
+-- | 'initModTimespanWithAttrs' posts a 'Timespan', then modifies the
+-- existing timespan, updating its attributes based on 'as', and checks the
+-- response.
+initModTimespanWithAttrs as =
+  initTimespan specifieds >>
+    post "/timespans" body >>= assertJSONOK (jsonKey 1)
+  where
+    body = L8.pack $ "timespan=1&clock=TT&beginMin=10.0" ++ buildAttribute as
+
 initSubTimespan :: Session ()
 -- | 'initSubTimespan' does 'initTimespan', then inserts another timespan with
 -- the first timespan as parent and checks the response.
@@ -80,9 +91,7 @@ initTimespanWithAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
 initTimespanWithAttrs as =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where
-    body             = L8.pack $ "clock=TT&beginMin=10.0" ++ build as
-    build ((k,v):xs) = '&' : k ++ "_=" ++ v ++ build xs
-    build []         = []
+    body             = L8.pack $ "clock=TT&beginMin=10.0" ++ buildAttribute as
 
 initAttribute :: Session ()
 -- | 'initAttribute' does 'initTimespan', then inserts a timespan attribute
