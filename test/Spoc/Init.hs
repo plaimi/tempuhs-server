@@ -48,7 +48,7 @@ initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 
 initTimespan :: Z.Set Specified -> [(AttributeKey, AttributeValue)]
              -> Session ()
--- | 'initTimeSpan' does 'initClock', then inserts a timespan specifying the
+-- | 'initTimespan' does 'initClock', then inserts a timespan specifying the
 -- optionals that are members of the 'Z.Set' of 'Specified's (falling back to
 -- default values for optionals not in the set), and checks the response.
 -- 'TimespanAttribute's are inserted based on the given list of

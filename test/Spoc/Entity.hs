@@ -113,7 +113,7 @@ specialTimespan p =
 rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])] ->
             [(Entity Timespan, [Entity TimespanAttribute])] ->
             Bool
--- | 'rubbishP' takes two get /timespan-results, and checks if the 'Timespan'
+-- | 'rubbishP' takes two GET /timespans results, and checks if the 'Timespan'
 -- within the second result is the same as a rubbished version of the useful
 -- timespan in the first result.
 rubbishP ((Entity ek ev,_):es) ((f@(Entity _ fv),_):fs) =

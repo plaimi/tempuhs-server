@@ -84,8 +84,8 @@ liftAE :: ActionE a -> SqlPersistA a
 liftAE = lift . lift
 
 clockParam :: L.Text -> SqlPersistA (Entity Clock)
--- | 'clockParam' looks up an 'Entity Clock' from the parametre of the given
--- name, raising 'errInvalidParam' if there is no match.
+-- | 'clockParam' looks up an @'Entity' 'Clock'@ from the parametre of the
+-- given name, raising 'errInvalidParam' if there is no match.
 clockParam p = do
   clock <- liftAE $ paramE p
   maybeClock <- getBy $ UniqueClock clock

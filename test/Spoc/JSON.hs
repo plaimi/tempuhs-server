@@ -25,7 +25,7 @@ jsonSuccess :: Value
 jsonSuccess = object []
 
 jsonKey :: Integer -> Value
--- | 'jsonKey' is the json representation of a database key.
+-- | 'jsonKey' is the JSON representation of a database key.
 jsonKey k = object ["id" .= k]
 
 showJSON :: ToJSON a => a -> String

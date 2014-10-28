@@ -138,8 +138,8 @@ postClock p = do
 
 updateAttribute :: Key Timespan -> T.Text -> Maybe T.Text -> SqlPersistA ()
 -- | 'updateAttribute' updates the 'TimespanAttribute' of a 'Timespan'. It
--- takes a 'Key Timespan', which is the ID of the 'Timespan' the attribute is
--- related to, a key, and a 'Maybe' value. If the key already exists in the
+-- takes a @'Key' 'Timespan'@, which is the ID of the 'Timespan' the attribute
+-- is related to, a key, and a 'Maybe' value. If the key already exists in the
 -- database, it is updated. If not, it is inserted. If the value is 'Nothing',
 -- the key is deleted if it exists. If the 'Timespan' does not exist, nothing
 -- happens.

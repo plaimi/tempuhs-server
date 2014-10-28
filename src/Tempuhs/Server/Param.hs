@@ -84,7 +84,7 @@ paramE k = do
 
 rescueMissing :: ActionE a -> ActionE (Maybe a)
 -- | 'rescueMissing' takes an 'ActionE a' and returns 'Nothing' if
--- 'errMissingParam' is raised, or 'Just a' if there are no exceptions.
+-- 'errMissingParam' is raised, or @'Just' a@ if there are no exceptions.
 rescueMissing a = rescue (Just <$> a) $ \e -> case errorCode e of
   "MISSING_PARAM"   -> return Nothing
   _                 -> raise e
