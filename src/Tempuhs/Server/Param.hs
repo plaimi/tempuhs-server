@@ -72,6 +72,17 @@ instance ParseTime t => Parsable (ParsableWrapper t)
                 Just pt -> Right $ ParsableWrap pt
                 Nothing -> Left  $ pack "Ill-formatted time string"
 
+-- | 'MaybeWrapper' is an ADT wrapper that permits us to wrap 'Maybe's around
+-- 'Parsable' instances.
+data MaybeWrapper a = MaybeWrap
+  {maybeUnwrap :: Maybe a -- ^ Unwrap the value.
+  }
+
+instance Parsable s => Parsable (MaybeWrapper s)
+  -- Empty strings are parsed to 'Nothing', others are re-parsed.
+  where parseParam p = case p of "" -> Right $ MaybeWrap Nothing
+                                 _  -> MaybeWrap . Just <$> parseParam p
+
 paramE :: Parsable a => Text -> ActionE a
 -- | 'paramE' looks up a parametre, raising 'errInvalidParam' if it fails to
 -- parse the parametre and 'errMissingParam' if the parametre is not found.

@@ -70,10 +70,12 @@ Get the clock with ID 1, if any:
 /timespans
 ==========
 Insert a new or modify an existing timespan.
-  timespan: integer, optional -- ID of the timespan to replace
+  timespan: integer -- ID of the timespan to update, only used when
+                    -- updating, omitted otherwise
   parent: integer, optional -- ID of the parent timespan if any
-  clock: string -- the name of an existing clock
-  beginMin: float -- lowest estimate of start time
+  clock: string, optional -- the name of an existing clock
+  beginMin: float -- lowest estimate of start time, optional when updating an
+                  -- existing timespan
   beginMax: float, optional -- highest estimate of start time
   endMin: float, optional -- lowest estimate of end time
   endMax: float, optional -- highest estimate of end time
@@ -81,6 +83,15 @@ Insert a new or modify an existing timespan.
                            -- importance/relevance of a timespan
   *_: string -- anything that ends with a '_' is considered an attribute. See
                 the examples for more information.
+
+Fields marked optional (or default) may be omitted. If omitted when inserting
+a new timespan, this means they will fall back to something sensible. See the
+Optionals chart for what.
+
+When the timespan field is used, you are saying that you want to update the
+existing timespan with the ID you pass in. Any field may be omitted when you
+do this. If the field is omitted, it is untouched. To clear parent, send an
+empty string, like "parent=".
 
 Optionals chart:
 +--------------------------------------------------------+

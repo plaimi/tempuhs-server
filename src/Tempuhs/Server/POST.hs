@@ -14,6 +14,10 @@ import Control.Arrow
   first,
   second,
   )
+import Control.Monad
+  (
+  join,
+  )
 import Data.Maybe
   (
   fromMaybe,
@@ -49,6 +53,7 @@ import Plailude
 import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
+  (=..),
   SqlPersistA,
   clockParam,
   liftAE,
@@ -57,9 +62,11 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.Param
   (
+  maybeUnwrap,
   paramE,
   defaultParam,
   maybeParam,
+  rescueMissing,
   )
 import Tempuhs.Server.Spock
   (
@@ -74,8 +81,8 @@ postTimespan :: ConnectionPool -> ActionE ()
 -- instead.
 postTimespan p = do
   timespan      <- maybeParam     "timespan"
-  parent        <- maybeParam     "parent"
-  beginMin      <- paramE         "beginMin"
+  maybeParent   <- maybeParam     "parent"
+  maybeBeginMin <- maybeParam     "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
   maybeEndMin   <- maybeParam     "endMin"
   maybeEndMax   <- maybeParam     "endMax"
@@ -85,33 +92,47 @@ postTimespan p = do
   -- attrs is a list of key-value tuples.
   attrs         <- filter (L.isSuffixOf "_" . fst) <$> params
 
-  -- If beginMax isn't specified, set it to beginMin + 1
-  let beginMax           = fromMaybe ((+( 1 :: ProperTime)) beginMin)
-                                     maybeBeginMax
-  -- If endMin isn't specified, set it to endMax-1.
-  -- If endMax isn't specified, set it to endMin+1.
-  -- If neither are specified, set them to beginMax and beginMax+1.
-      (endMin, endMax)   =
-        case (maybeEndMin, maybeEndMax) of
-          (Nothing, Nothing) ->
-            (beginMin, fromMaybe (beginMin + (1 :: ProperTime)) maybeBeginMax)
-          (Just a, Nothing)  -> (a, a + (1 :: ProperTime))
-          (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
-          (Just a, Just b)   -> (a, b)
+  -- "parent=n"  -> Just Just n
+  -- "parent="   -> Just Nothing
+  -- "parent"    -> Just Nothing
+  -- Unspecified -> Nothing
+  let parent = fmap mkKey . maybeUnwrap <$> maybeParent
+      as     = map (both L.toStrict . first L.init) attrs
 
   runDatabase p $ do
-    clock <- clockParam "clock"
-    let ts = Timespan (mkKey <$> parent) (entityKey clock) beginMin beginMax
-             endMin endMax weight rubbish
-    let as = map (both L.toStrict . first L.init) attrs
     liftAE . jsonKey =<< case timespan of
       Just i  -> do
         let k = mkKey i
-        repsert k ts
+        clock <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
+
+        update k $ concat [TimespanParent   =.. parent
+                          ,TimespanClock    =.. (entityKey <$> clock)
+                          ,TimespanBeginMin =.. maybeBeginMin
+                          ,TimespanBeginMax =.. maybeBeginMax
+                          ,TimespanEndMin   =.. maybeEndMin
+                          ,TimespanEndMax   =.. maybeEndMax
+                          ]
         mapM_ (uncurry (updateAttribute k) . second Just) as
         return k
       Nothing -> do
-        tid <- insert ts
+        beginMin <- liftAE $ paramE "beginMin"
+        -- If beginMax isn't specified, set it to beginMin + 1
+        let beginMax         = fromMaybe (beginMin + (1 :: ProperTime))
+                                         maybeBeginMax
+        -- If endMin isn't specified, set it to endMax-1.
+        -- If endMax isn't specified, set it to endMin+1.
+        -- If neither are specified, set them to beginMax and beginMax+1.
+            (endMin, endMax) =
+              case (maybeEndMin, maybeEndMax) of
+                (Nothing, Nothing) ->
+                  (beginMin
+                  ,fromMaybe (beginMin + (1 :: ProperTime)) maybeBeginMax)
+                (Just a, Nothing)  -> (a, a + (1 :: ProperTime))
+                (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
+                (Just a, Just b)   -> (a, b)
+        clock    <- clockParam "clock"
+        tid      <- insert $ Timespan (join parent) (entityKey clock) beginMin
+                                 beginMax endMin endMax weight rubbish
         mapM_ (insert . uncurry (TimespanAttribute tid)) as
         return tid
 

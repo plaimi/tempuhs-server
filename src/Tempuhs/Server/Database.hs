@@ -25,11 +25,17 @@ import Database.Persist
   PersistEntity,
   PersistValue (PersistInt64),
   SelectOpt (Asc),
+  (=.),
   (==.),
   entityKey,
   getBy,
   keyFromValues,
   selectList,
+  )
+import Database.Persist.Class
+  (
+  EntityField,
+  PersistField,
   )
 import Database.Persist.Sql
   (
@@ -37,6 +43,10 @@ import Database.Persist.Sql
   SqlPersistT,
   runSqlPool,
   runMigration,
+  )
+import Database.Persist.Types
+  (
+  Update,
   )
 import Web.Scotty.Trans
   (
@@ -92,3 +102,10 @@ clockParam p = do
   case maybeClock of
     Just c  -> return c
     Nothing -> liftAE $ raise $ errInvalidParam $ L.toStrict p
+
+(=..) :: PersistField v => EntityField f v -> Maybe v -> [Update f]
+-- | '(=..)' sets an @'EntityField' f v@, to the passed in 'Maybe' value,
+-- which is a 'PersistField'. This returns an @'Update' f@ in the '[]'
+-- 'Monad'. If the update is unreasonable (i.e. the passed in value is
+-- 'Nothing'), '[]' is returned.
+f =.. v = [f =. w | Just w <- [v]]

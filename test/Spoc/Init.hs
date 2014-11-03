@@ -81,9 +81,7 @@ initModTimespan =
   initDefaultTimespan >>
     post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where
-    body =
-      L8.pack $ "timespan=1&clock=TT&beginMin=10.0" ++
-                buildAttribute attributes
+    body = L8.pack $ "timespan=1&beginMin=0.0" ++ buildAttribute attributes
 
 initSubTimespan :: Session ()
 -- | 'initSubTimespan' does 'initDefaultTimespan', then inserts another

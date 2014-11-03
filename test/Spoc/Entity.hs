@@ -85,8 +85,7 @@ timespansSpecsAttrs :: Z.Set Specified
 -- and 'AttributeValue's.
 timespansSpecsAttrs ss as =
   [(timespanEntity ss
-   ,[ attributeEntity i 1 k v
-    | (i, (k, v)) <- [1 .. ] `zip` map (both T.pack) as ])]
+   ,mkAttributeEntities as)]
 
 timespansSpecs :: Z.Set Specified
                    -> [(Entity Timespan, [Entity TimespanAttribute])]
@@ -97,6 +96,15 @@ timespansAttrs :: [(AttributeKey, AttributeValue)]
                    -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansAttrs' does 'timespansSpecsAttrs' without 'Specified's
 timespansAttrs = timespansSpecsAttrs Z.empty
+
+modTimespanEntity :: (Entity Timespan, [Entity TimespanAttribute])
+-- | 'modTimespanEntity' is a convenience function for constructing a pair of
+-- 'Entity's, the first containing a 'Timespan' like the one in
+-- 'timespanEntity' with a modified beginMin, the second containing the
+-- default set of 'TimespanAttribute's in 'attributes'.
+modTimespanEntity =
+  (Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 15 24 42 1 Nothing
+  ,mkAttributeEntities attributes)
 
 defaultTimespans:: [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'defaultTimespans' is a helper value for the often used
@@ -124,3 +132,10 @@ rubbishP ((Entity ek ev,_):es) ((f@(Entity _ fv),_):fs) =
 rubbishP [] []                                          = True
 rubbishP _  []                                          = False
 rubbishP []  _                                          = False
+
+mkAttributeEntities :: [(String, String)] -> [Entity TimespanAttribute]
+-- | 'mkAttributeEntities' takes a list of key-value pairs and makes
+-- a '[Entity TimespanAttribute]'.
+mkAttributeEntities as =
+ [ attributeEntity i 1 k v
+    | (i, (k, v)) <- [1 .. ] `zip` map (both T.pack) as ]

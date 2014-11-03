@@ -44,6 +44,7 @@ import Spoc.Default
   )
 import Spoc.Entity
   (
+  modTimespanEntity,
   timespanEntity,
   timespansAttrs,
   timespansSpecs,
@@ -100,14 +101,11 @@ timespansSpec = do
       initSubTimespan
     it "successfully inserts a timespan with attributes" $ do
       initTimespanAttrs attributes
-      assertTimespanWithAttrs
+      getTimespans (10, 42) >>= assertJSONOK (timespansAttrs attributes)
     it "modifies an existing timespan and its attributes" $ do
       initModTimespan
-      assertTimespanWithAttrs
+      getTimespans (10, 42) >>= assertJSONOK [modTimespanEntity]
     itReturnsMissingParam $ post "/timespans" ""
-  where assertTimespanWithAttrs = do
-          getTimespans (10, 42) >>=
-            assertJSONOK (timespansAttrs attributes)
 
 attributesSpec :: Spec
 attributesSpec = do
