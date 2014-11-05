@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module      :  $Header$
 Description :  Types for tests.
@@ -7,10 +9,28 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Spoc.Type where
 
-type AttributeKey   = String
-type AttributeValue = String
-type Specified      = String
+import Data.String
+  (
+  IsString,
+  )
+import Data.Stringable
+  (
+  Stringable,
+  )
+import Network.HTTP.Types.QueryLike
+  (
+  QueryKeyLike,
+  QueryValueLike,
+  toQueryKey,
+  )
 
-buildAttribute :: [(AttributeKey, AttributeValue)] -> String
-buildAttribute ((k,v):xs) = '&' : k ++ "_=" ++ v ++ buildAttribute xs
-buildAttribute []         = []
+type Specified      = String
+type AttributePair  = (AttributeKey, AttributeValue)
+
+newtype AttributeKey   = MkAttrKey String
+                         deriving (IsString, Stringable)
+newtype AttributeValue = MkAttrVal String
+                         deriving (IsString, QueryValueLike, Stringable)
+
+instance QueryKeyLike AttributeKey where
+  toQueryKey (MkAttrKey s) = toQueryKey $ s ++ "_"

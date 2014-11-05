@@ -10,12 +10,14 @@ Maintainer  :  tempuhs@plaimi.net
 -} module Spoc.Request where
 
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as L
 import Network.HTTP.Types
   (
+  QueryLike,
   methodDelete,
   methodPost,
+  renderQuery,
+  toQuery,
   )
 import Network.Wai
   (
@@ -48,8 +50,8 @@ get = request . setPath defaultRequest
 getTimespans :: (Double, Double) -> Session SResponse
 -- | 'getTimespans' performs a query for timespans in the given time range.
 getTimespans (a, b) =
-  get $ B.concat ["/timespans?clock=TT&begin=", ps a, "&end=", ps b]
-  where ps = B8.pack . show
+  get $ B.append "/timespans?clock=TT&" $
+    buildQuery [("begin" :: String, show a), ("end", show b)]
 
 delete :: B.ByteString -> Session SResponse
 -- | 'delete' makes a DELETE 'request' with the given path.
@@ -59,3 +61,13 @@ post :: B.ByteString -> L.ByteString -> Session SResponse
 -- | 'post' makes a POST 'request' with the given path and URL-encoded form
 -- data as the body.
 post p b = srequest $ SRequest (setPath formPostRequest p) b
+
+buildQuery :: QueryLike a => a -> B.ByteString
+-- | 'buildQuery' makes a query string from a 'QueryLike', without prepending
+-- a question mark.
+buildQuery = renderQuery False . toQuery
+
+buildQueryL :: QueryLike a => a -> L.ByteString
+-- | 'buildQueryL' is a convenience function that makes a lazy 'L.ByteString'
+-- from the result of 'buildQuery'.
+buildQueryL = L.fromStrict . buildQuery

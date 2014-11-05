@@ -9,7 +9,7 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Spoc.Init where
 
-import qualified Data.ByteString.Lazy.Char8 as L8
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Set as Z
 import Network.Wai.Test
   (
@@ -31,14 +31,13 @@ import Spoc.JSON
   )
 import Spoc.Request
   (
+  buildQueryL,
   post,
   )
 import Spoc.Type
   (
-  AttributeKey,
-  AttributeValue,
+  AttributePair,
   Specified,
-  buildAttribute,
   )
 
 initClock :: Session ()
@@ -46,23 +45,23 @@ initClock :: Session ()
 -- response.
 initClock = post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 1)
 
-initTimespan :: Z.Set Specified -> [(AttributeKey, AttributeValue)]
-             -> Session ()
+initTimespan :: Z.Set Specified -> [AttributePair] -> Session ()
 -- | 'initTimespan' does 'initClock', then inserts a timespan specifying the
 -- optionals that are members of the 'Z.Set' of 'Specified's (falling back to
 -- default values for optionals not in the set), and checks the response.
 -- 'TimespanAttribute's are inserted based on the given list of
--- 'AttributeKey'-'AttributeValue'-pairs.
+-- 'AttributePair's.
 initTimespan ss as =
   initClock >> post "/timespans" body >>= assertJSONOK (jsonKey 1)
-  where body = L8.pack . concat $
-          ["clock=TT&beginMin=10.0"]                  ++
-          ["&beginMax=15" | "beginMax" `Z.member` ss] ++
-          ["&endMin=24"   | "endMin"   `Z.member` ss] ++
-          ["&endMax=42"   | "endMax"   `Z.member` ss] ++
-          [buildAttribute as]
+  where body = L.intercalate "&" $
+          ["clock=TT&beginMin=10.0"] ++
+          [buildQueryL . filter (\(x,_) -> x `Z.member` ss) $
+            [("beginMax", "15" :: String)
+            ,("endMin",   "24")
+            ,("endMax",   "42")]]    ++
+          [buildQueryL as]
 
-initTimespanAttrs :: [(AttributeKey, AttributeValue)] -> Session ()
+initTimespanAttrs :: [AttributePair] -> Session ()
 -- | 'initTimespanAttrs' does 'initTimespan' without 'Specified's.
 initTimespanAttrs = initTimespan Z.empty
 
@@ -81,7 +80,7 @@ initModTimespan =
   initDefaultTimespan >>
     post "/timespans" body >>= assertJSONOK (jsonKey 1)
   where
-    body = L8.pack $ "timespan=1&beginMin=0.0" ++ buildAttribute attributes
+    body = L.append "timespan=1&beginMin=0.0&" $ buildQueryL attributes
 
 initSubTimespan :: Session ()
 -- | 'initSubTimespan' does 'initDefaultTimespan', then inserts another

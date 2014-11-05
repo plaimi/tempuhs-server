@@ -18,7 +18,6 @@ import Control.Monad
   guard,
   )
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as B8
 import Test.Hspec
   (
   Spec,
@@ -53,6 +52,7 @@ import Spoc.Init
   )
 import Spoc.Request
   (
+  buildQuery,
   get,
   getTimespans,
   )
@@ -98,9 +98,9 @@ timespansSpec = do
           return (begin, end)
       forM_ ranges $
         getTimespans >=> assertJSONOK defaultTimespans
-      forM_ ([("begin", x) | x <- begins] ++
-             [("end",   x) | x <- ends]) $ \(p, v) ->
-        get (B.concat ["/timespans?", p, "=", B8.pack $ show v]) >>=
+      forM_ ([("begin" :: String, x) | x <- begins] ++
+             [("end",             x) | x <- ends]) $ \(p, v) ->
+        get (B.append "/timespans?" $ buildQuery [(p, show v)]) >>=
           assertJSONOK defaultTimespans
     it "returns [] for views that don't intersect any timespan" $ do
       initDefaultTimespan

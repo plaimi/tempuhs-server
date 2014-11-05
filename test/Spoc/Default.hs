@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 Module      :  $Header$
 Description :  Defaults for tests.
@@ -11,8 +13,7 @@ import qualified Data.Set as Z
 
 import Spoc.Type
   (
-  AttributeKey,
-  AttributeValue,
+  AttributePair,
   Specified,
   )
 
@@ -20,6 +21,6 @@ specifieds :: Z.Set Specified
 -- | A 'Z.Set' of all optional values that are specified.
 specifieds = Z.fromList ["beginMax", "endMin", "endMax"]
 
-attributes :: [(AttributeKey, AttributeValue)]
--- | A '[(AttributeKey, AttributeValue)]' of attributes for testing.
+attributes :: [AttributePair]
+-- | A '[AttributePair]' of attributes for testing.
 attributes = [("foo", "fu"), ("bar", "baz")]

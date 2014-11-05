@@ -7,6 +7,10 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Spoc.Entity where
 
+import Control.Arrow
+  (
+  (***),
+  )
 import Data.Aeson
   (
   toJSON,
@@ -18,6 +22,10 @@ import Data.Functor
 import Data.Maybe
   (
   isJust,
+  )
+import Data.Stringable
+  (
+  toText,
   )
 import Database.Persist
   (
@@ -34,8 +42,7 @@ import Spoc.Default
   )
 import Spoc.Type
   (
-  AttributeKey,
-  AttributeValue,
+  AttributePair,
   Specified,
   )
 import Tempuhs.Chronology
@@ -75,14 +82,12 @@ timespanEntity ss =
         (False, False, True)  -> (11, 41, 42)
         (True,  True,  True)  -> (15, 24, 42)
 
-timespansSpecsAttrs :: Z.Set Specified
-                   -> [(AttributeKey, AttributeValue)]
+timespansSpecsAttrs :: Z.Set Specified -> [AttributePair]
                    -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansSpecsAttrs' constructs a list of pairs. The first member is an
 -- 'Entity' with a 'Timespan'. The second is a list of 'Entity's with
 -- 'TimespanAttribute's. The 'Timespan' respects the passed 'Specified's. The
--- 'TimespanAttribute's respects the passed list of pairs of 'AttributeKey's
--- and 'AttributeValue's.
+-- 'TimespanAttribute's respects the passed list of 'AttributePair's.
 timespansSpecsAttrs ss as =
   [(timespanEntity ss
    ,mkAttributeEntities as)]
@@ -92,7 +97,7 @@ timespansSpecs :: Z.Set Specified
 -- | 'timespansSpecs' does 'timespansSpecsAttrs' without 'TimespanAttribute's.
 timespansSpecs = flip timespansSpecsAttrs []
 
-timespansAttrs :: [(AttributeKey, AttributeValue)]
+timespansAttrs :: [AttributePair]
                    -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansAttrs' does 'timespansSpecsAttrs' without 'Specified's
 timespansAttrs = timespansSpecsAttrs Z.empty
@@ -133,9 +138,9 @@ rubbishP [] []                                          = True
 rubbishP _  []                                          = False
 rubbishP []  _                                          = False
 
-mkAttributeEntities :: [(String, String)] -> [Entity TimespanAttribute]
+mkAttributeEntities :: [AttributePair] -> [Entity TimespanAttribute]
 -- | 'mkAttributeEntities' takes a list of key-value pairs and makes
 -- a '[Entity TimespanAttribute]'.
 mkAttributeEntities as =
- [ attributeEntity i 1 k v
-    | (i, (k, v)) <- [1 .. ] `zip` map (both T.pack) as ]
+  [ attributeEntity i 1 k v
+  | (i, (k, v)) <- [1 .. ] `zip` map (toText *** toText) as ]
