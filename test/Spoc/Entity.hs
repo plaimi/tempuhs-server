@@ -56,8 +56,8 @@ clockEntity :: Integer -> T.Text -> Entity Clock
 -- containing a 'Clock'.
 clockEntity k = Entity (mkKey k) . Clock
 
-attributeEntity :: Integer -> Integer -> T.Text -> T.Text ->
-                   Entity TimespanAttribute
+attributeEntity :: Integer -> Integer -> T.Text -> T.Text
+                -> Entity TimespanAttribute
 -- | 'attributeEntity' is a convenience function for constructing
 -- an 'Entity' containing a 'TimespanAttribute'.
 attributeEntity k = Entity (mkKey k) .:. (TimespanAttribute . mkKey)
@@ -83,7 +83,7 @@ timespanEntity ss =
         (True,  True,  True)  -> (15, 24, 42)
 
 timespansSpecsAttrs :: Z.Set Specified -> [AttributePair]
-                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+                    -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansSpecsAttrs' constructs a list of pairs. The first member is an
 -- 'Entity' with a 'Timespan'. The second is a list of 'Entity's with
 -- 'TimespanAttribute's. The 'Timespan' respects the passed 'Specified's. The
@@ -93,12 +93,12 @@ timespansSpecsAttrs ss as =
    ,mkAttributeEntities as)]
 
 timespansSpecs :: Z.Set Specified
-                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+               -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansSpecs' does 'timespansSpecsAttrs' without 'TimespanAttribute's.
 timespansSpecs = flip timespansSpecsAttrs []
 
 timespansAttrs :: [AttributePair]
-                   -> [(Entity Timespan, [Entity TimespanAttribute])]
+               -> [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'timespansAttrs' does 'timespansSpecsAttrs' without 'Specified's
 timespansAttrs = timespansSpecsAttrs Z.empty
 
@@ -111,7 +111,7 @@ modTimespanEntity =
   (Entity (mkKey 1) $ Timespan Nothing (mkKey 1) 0 15 24 42 1 Nothing
   ,mkAttributeEntities attributes)
 
-defaultTimespans:: [(Entity Timespan, [Entity TimespanAttribute])]
+defaultTimespans :: [(Entity Timespan, [Entity TimespanAttribute])]
 -- | 'defaultTimespans' is a helper value for the often used
 -- 'Init.initDefaultTimespan'.
 defaultTimespans = timespansSpecsAttrs specifieds attributes
@@ -123,9 +123,9 @@ specialTimespan p =
   Entity (mkKey 2) $
          Timespan (mkKey <$> p) (mkKey 1) (-10) (-9) (-10) (-9) 1 Nothing
 
-rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])] ->
-            [(Entity Timespan, [Entity TimespanAttribute])] ->
-            Bool
+rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])]
+         -> [(Entity Timespan, [Entity TimespanAttribute])]
+         -> Bool
 -- | 'rubbishP' takes two GET /timespans results, and checks if the 'Timespan'
 -- within the second result is the same as a rubbished version of the useful
 -- timespan in the first result.

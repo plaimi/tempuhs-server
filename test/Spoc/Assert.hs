@@ -81,8 +81,8 @@ assertContentType ct r = assertBool msg $ Just ct == h
           "\nbut received:\t\t"      ++ fromMaybe "nothing" (show <$> h)
     h   = B8.takeWhile (/= ';') <$> lookup "content-type" (simpleHeaders r)
 
-assertJSON :: (FromJSON a, ToJSON a) =>
-              String -> SResponse -> (a -> Bool) -> Session ()
+assertJSON :: (FromJSON a, ToJSON a)
+           => String -> SResponse -> (a -> Bool) -> Session ()
 -- | 'assertJSON' checks that a response is a valid JSON response and checks
 -- the data using the provided function.
 assertJSON desc r f = do
