@@ -14,10 +14,16 @@ Maintainer  :  tempuhs@plaimi.net
 import Control.Monad
   (
   (>=>),
+  forM,
   forM_,
   guard,
+  join,
   )
 import qualified Data.ByteString as B
+import Data.List
+  (
+  subsequences,
+  )
 import Test.Hspec
   (
   Spec,
@@ -118,3 +124,40 @@ timespansSpec = do
     it "returns [] asking for rubbish after inserting useful timespans" $ do
       initDefaultTimespan
       get "/timespans?rubbish=2000-01-01" >>= assertJSONOK ()
+    it "filters on attributes" $ do
+      initDefaultTimespan
+      let qs :: String -> String -> B.ByteString
+          qs k v = B.append "/timespans?" $ buildQuery [(k, v)]
+          go x l = forM_ [qs k v | (k, vs) <- l, v <- vs] $
+                         get >=> assertJSONOK x
+      go ()
+         [("nx_",  ["", "fu"]),       ("nx_like",  ["%"])
+         ,("foo_", ["%", "f", "Fu"]), ("foo_like", [""])]
+      go defaultTimespans
+         [("foo_",     ["fu"])
+         ,("foo_like", ["fu", "%", "%u", "f%", "%fu%", "f%u"])]
+    it "only returns timespans that match all attribute filters" $ do
+      initDefaultTimespan
+      let foos   = [("like", "%"), ("", "fu")]
+          bars   = [("like", "%"), ("", "baz")]
+          qs :: [(String, (String, String))] -> B.ByteString
+          qs     = B.append "/timespans?" . buildQuery .
+                     map (\(k, (o, v)) -> (k ++ "_" ++ o, v))
+          go x l = get (qs . join . forM l $ uncurry (fmap . (,))) >>=
+                     assertJSONOK x
+      go ()
+         [("foo", foos), ("nx", foos)]
+      go defaultTimespans
+         [("foo", foos), ("bar", bars)]
+    it "can filter on the same attribute multiple times" $ do
+      initDefaultTimespan
+      let pos = subsequences ["%", "baz", "b%z", "%baz%", "%b%z%"]
+          neg = do
+            a <- pos
+            b <- ["", "b", "%bar%", "%x%"]
+            [b : a, a ++ [b]]
+          qs :: [String] -> B.ByteString
+          qs  = B.append "/timespans?" . buildQuery .
+                  map ((,) ("bar_like" :: String))
+      forM_ (zip pos (repeat defaultTimespans) ++ zip neg (repeat [])) $
+        \(a, b) -> get (qs a) >>= assertJSONOK b

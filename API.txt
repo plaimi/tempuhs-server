@@ -30,6 +30,9 @@ this is generally meaningless.
   end: float, optional -- end of time period as read by the clock
   rubbish: timestamp, optional -- timestamp string for the earliest timespan
                                -- to retrieve
+  *_: string -- filter on exact attribute value (can be give multiple times)
+  *_like: string -- filter on part of attribute value using SQL LIKE (can be
+                 -- given multiple times)
 
 Examples:
 ---------
@@ -44,6 +47,13 @@ Get all top-level timespans rubbished since April Fool's, 2015:
 
 Get all top-level timespans rubbished since 02:34 at April Fool's, 2015:
   /timespans?rubbish=2015-04-01T02-34-00
+
+Get all top-level timespans having a "Title" attribute with value "Xonotic":
+  /timespans?Title_=Xonotic
+
+Get all top-level timespans having a "Title" attribute whose value starts with
+"Xon":
+  /timespans?Title_like="Xon%"
 
 /clocks
 =======

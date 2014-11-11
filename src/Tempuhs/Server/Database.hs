@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 Module      :  $Header$
 Description :  The tempuhs server database functions.
@@ -18,6 +20,15 @@ import Control.Monad.Trans.Resource
   )
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import Database.Esqueleto
+  (
+  Value,
+  (^.),
+  (&&.),
+  like,
+  val,
+  )
+import qualified Database.Esqueleto as E
 import Database.Persist
   (
   Entity,
@@ -50,6 +61,7 @@ import Database.Persist.Types
   )
 import Web.Scotty.Trans
   (
+  params,
   raise,
   )
 
@@ -109,3 +121,26 @@ clockParam p = do
 -- 'Monad'. If the update is unreasonable (i.e. the passed in value is
 -- 'Nothing'), '[]' is returned.
 f =.. v = [f =. w | Just w <- [v]]
+
+attributeSearch :: E.Esqueleto query expr backend
+                => ActionE [expr (Entity Timespan)
+                         -> expr (Entity TimespanAttribute)
+                         -> expr (Value Bool)]
+-- | 'attributeSearch' uses the list of request parametres to construct a list
+-- of functions that can be used in an 'Esqueleto' query to filter 'Timespan's
+-- based on their 'TimespanAttribute's.
+attributeSearch = do
+  ps <- params
+  return $ do
+    (p, v) <- ps
+    let (n_, o) = T.breakOnEnd "_" $ L.toStrict p
+    (#) <- case o of
+             ""     -> [(E.==.)]
+             "like" -> [like]
+             _      -> []
+    case T.stripSuffix "_" n_ of
+      Just n -> [\t a ->
+                   a ^. TimespanAttributeName E.==. val n &&.
+                   a ^. TimespanAttributeValue # (val $ L.toStrict v) &&.
+                   a ^. TimespanAttributeTimespan E.==. t ^. TimespanId]
+      _      -> []
