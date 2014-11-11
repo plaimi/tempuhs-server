@@ -30,6 +30,7 @@ import Options.Applicative
   (<>),
   (<$>),
   (<*>),
+  auto,
   execParser,
   fullDesc,
   header,
@@ -69,13 +70,13 @@ options = MkConfig
      <> short   'd'
      <> metavar "CONNSTR"
      <> help    "Connection string for the database" )
-  <*> option
+  <*> option auto
       ( long    "connections"
      <> short   'c'
      <> metavar "NUM"
      <> value   1
      <> help    "Number of connections to the database" )
-  <*> option
+  <*> option auto
       ( long    "port"
      <> short   'p'
      <> metavar "PORT"
