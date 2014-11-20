@@ -30,6 +30,7 @@ import Tempuhs.Server.POST
   (
   postAttribute,
   postClock,
+  postRole,
   postTimespan,
   postUser,
   )
@@ -53,6 +54,7 @@ serve dbPool = do
   post   "/timespans"  $ postTimespan   dbPool
   post   "/clocks"     $ postClock      dbPool
   post   "/attributes" $ postAttribute  dbPool
+  post   "/roles"      $ postRole       dbPool
   delete "/timespans"  $ deleteTimespan dbPool
   post   "/users"      $ postUser       dbPool
   notFound $ jsonError errNotFound

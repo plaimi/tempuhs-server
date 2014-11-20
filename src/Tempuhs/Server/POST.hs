@@ -197,3 +197,24 @@ postUser p = do
       Just i  -> let k = mkKey i
                  in  repsert k u >> return k
       Nothing -> insert u
+
+postRole :: ConnectionPool -> ActionE ()
+-- | 'postRole' inserts a new 'Role' into the database, or updates an
+-- existing one, from a request.
+postRole p = do
+  r <- maybeParam "role"
+  runDatabase p $
+    liftAE . jsonKey =<<
+      case r of
+        Just i -> do
+          let k = mkKey i
+          n  <- liftAE $ maybeParam "name"
+          ns <- liftAE $ maybeParam "namespace"
+          update (mkKey i) $ concat [RoleName      =.. n
+                                    ,RoleNamespace =.. (mkKey <$> ns)
+                                    ]
+          return k
+        Nothing -> do
+          n  <- liftAE $ paramE "name"
+          ns <- liftAE $ paramE "namespace"
+          return =<< insert $ Role n (mkKey ns) Nothing

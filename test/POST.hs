@@ -55,6 +55,7 @@ import Spoc.Init
   initAttribute,
   initClock,
   initModTimespan,
+  initRole,
   initSubTimespan,
   initTimespanAttrs,
   initTimespanSpecs,
@@ -78,6 +79,7 @@ postSpec = do
   timespansSpec
   attributesSpec
   usersSpec
+  rolesSpec
 
 clocksSpec :: Spec
 clocksSpec = do
@@ -142,3 +144,20 @@ usersSpec = do
       initUser
       post "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
     itReturnsMissingParam $ post "/users" ""
+
+rolesSpec :: Spec
+rolesSpec = do
+  describe "POST /roles" $ do
+    it "inserts a role with key 1"
+      initRole
+    it "won't insert two roles with the same name and namespace" $ do
+      initRole
+      post "/roles" "name=Rulle&namespace=1" >>= assertJSONError 500 "INTERNAL"
+    it "modifies an existing role's name" $ do
+      initRole
+      post "/roles" "role=1&name=Lulle" >>= assertJSONOK (jsonKey 1)
+    it "modifies an existing role's namespace" $ do
+      initRole
+      post "/users" "user=2&name=Joe" >>= assertJSONOK (jsonKey 2)
+      post "/roles" "role=1&namespace=2" >>= assertJSONOK (jsonKey 1)
+    itReturnsMissingParam $ post "/roles" ""

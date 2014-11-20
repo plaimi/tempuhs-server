@@ -185,6 +185,23 @@ Add the Luser user:
 Rename the user with ID 3 to "Wow":
   user=3&name=Wow
 
+/roles
+=======
+Inserts a new role, or modifies an existing one.
+
+To POST a new role, both a name and a user ID for its namespace must be
+passed. If passing a role ID, you may change that role's name, the namespace
+or both.
+
+  role: integer, optional -- ID of the role to modify
+  name: string, optional -- name used to identify the role
+  namespace: integer, optional -- ID of the user whose name becomes the role's
+                               -- namespace
+
+Examples
+--------
+Add the Rulle role with the namespace of the username of the user with ID 902:
+  name=Rulle&namespace=902
 
 
 ##########
