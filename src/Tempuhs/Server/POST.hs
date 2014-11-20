@@ -184,3 +184,16 @@ deleteAttribute a = do
     Just (Entity aid _) -> delete aid
     Nothing             -> return ()
   liftAE jsonSuccess
+
+postUser :: ConnectionPool -> ActionE ()
+-- | 'postUser' inserts a new 'User' into the database, or replaces an
+-- existing one, from a request.
+postUser p = do
+  user <- maybeParam "user"
+  name  <- paramE    "name"
+  runDatabase p $
+    let u = User name Nothing
+    in  liftAE . jsonKey =<< case user of
+      Just i  -> let k = mkKey i
+                 in  repsert k u >> return k
+      Nothing -> insert u

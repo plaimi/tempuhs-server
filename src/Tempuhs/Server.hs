@@ -31,6 +31,7 @@ import Tempuhs.Server.POST
   postAttribute,
   postClock,
   postTimespan,
+  postUser,
   )
 import Tempuhs.Server.DELETE
   (
@@ -53,4 +54,5 @@ serve dbPool = do
   post   "/clocks"     $ postClock      dbPool
   post   "/attributes" $ postAttribute  dbPool
   delete "/timespans"  $ deleteTimespan dbPool
+  post   "/users"      $ postUser       dbPool
   notFound $ jsonError errNotFound

@@ -99,3 +99,8 @@ initAttribute =
   initTimespanSpecs specifieds >>
     post "/attributes" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&key=title&value=test"
+
+initUser :: Session ()
+-- | 'initUser' inserts a user into an empty database and checks the
+-- response.
+initUser = post "/users" "name=Luser" >>= assertJSONOK (jsonKey 1)

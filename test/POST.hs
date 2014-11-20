@@ -58,6 +58,7 @@ import Spoc.Init
   initSubTimespan,
   initTimespanAttrs,
   initTimespanSpecs,
+  initUser,
   )
 import Spoc.JSON
   (
@@ -72,7 +73,11 @@ import Spoc.Request
 
 postSpec :: Spec
 -- | 'postSpec' runs the POST 'Spec's.
-postSpec = clocksSpec >> timespansSpec >> attributesSpec
+postSpec = do
+  clocksSpec
+  timespansSpec
+  attributesSpec
+  usersSpec
 
 clocksSpec :: Spec
 clocksSpec = do
@@ -124,3 +129,16 @@ attributesSpec = do
       getTimespans (10, 42) >>=
         assertJSONOK [(timespanEntity specifieds, [] :: [()])]
     itReturnsMissingParam $ post "/attributes" ""
+
+usersSpec :: Spec
+usersSpec = do
+  describe "POST /users" $ do
+    it "inserts a user with key 1"
+      initUser
+    it "won't insert two users with the same name" $ do
+      initUser
+      post  "/users" "name=Luser" >>= assertJSONError 500 "INTERNAL"
+    it "replaces an existing user" $ do
+      initUser
+      post "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
+    itReturnsMissingParam $ post "/users" ""

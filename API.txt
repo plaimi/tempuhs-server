@@ -171,6 +171,20 @@ Add the Julian Day Number system as a clock:
 Rename the clock with ID 3 to "MTC":
   clock=3&name=MTC
 
+/users
+=======
+Insert a new user, or replaces an existing one.
+  user: integer, optional -- ID of the user to replace
+  name: string -- name used to identify the user
+
+Examples
+--------
+Add the Luser user:
+  name=Luser
+
+Rename the user with ID 3 to "Wow":
+  user=3&name=Wow
+
 
 
 ##########
