@@ -72,6 +72,23 @@ Get the clock named "TT", if any:
 Get the clock with ID 1, if any:
   /clocks?id=1
 
+/users
+=======
+Retrieve all users that match the given criteria.
+  name: string, optional -- the name of a user
+  id: integer, optional -- the ID of a user
+
+Examples:
+---------
+Get a list of all users:
+  /users
+
+Get the user named "Luser", if any:
+  /users?name=Luser
+
+Get the user with ID 1, if any:
+  /users?id=1
+
 
 
 ########

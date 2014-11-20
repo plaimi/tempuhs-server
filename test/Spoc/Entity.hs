@@ -56,6 +56,11 @@ clockEntity :: Integer -> T.Text -> Entity Clock
 -- containing a 'Clock'.
 clockEntity k = Entity (mkKey k) . Clock
 
+userEntity :: Integer -> T.Text -> Entity User
+-- | 'userEntity' is a convenience function for constructing an 'Entity'
+-- containing a 'User'.
+userEntity k = Entity (mkKey k) . flip User Nothing
+
 attributeEntity :: Integer -> Integer -> T.Text -> T.Text
                 -> Entity TimespanAttribute
 -- | 'attributeEntity' is a convenience function for constructing

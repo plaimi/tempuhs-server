@@ -48,6 +48,7 @@ import Spoc.Entity
   defaultTimespans,
   specialTimespan,
   timespansSpecsAttrs,
+  userEntity,
   )
 import Spoc.Init
   (
@@ -55,6 +56,7 @@ import Spoc.Init
   initClock,
   initDefaultTimespan,
   initSubTimespan,
+  initUser,
   )
 import Spoc.Request
   (
@@ -65,7 +67,10 @@ import Spoc.Request
 
 getSpec :: Spec
 -- | 'getSpec' runs the GET 'Spec's.
-getSpec = clockSpec >> timespansSpec
+getSpec = do
+  clockSpec
+  timespansSpec
+  usersSpec
 
 clockSpec :: Spec
 clockSpec = do
@@ -161,3 +166,16 @@ timespansSpec = do
                   map ((,) ("bar_like" :: String))
       forM_ (zip pos (repeat defaultTimespans) ++ zip neg (repeat [])) $
         \(a, b) -> get (qs a) >>= assertJSONOK b
+
+usersSpec :: Spec
+usersSpec = do
+  describe "GET /users" $ do
+    it "initially returns []" $
+      get "/users" >>= assertJSONOK ()
+    it "returns user after insertion" $ do
+      initUser
+      get "/users" >>= assertJSONOK [userEntity 1 "Luser"]
+    it "filters by name" $ do
+      initUser
+      get "/users?name=Luser" >>= assertJSONOK [userEntity 1 "Luser"]
+      get "/users?name=Ruser" >>= assertJSONOK ()

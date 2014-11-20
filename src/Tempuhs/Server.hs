@@ -25,6 +25,7 @@ import Tempuhs.Server.GET
   (
   clocks,
   timespans,
+  users,
   )
 import Tempuhs.Server.POST
   (
@@ -51,6 +52,7 @@ serve dbPool = do
   defaultHandler jsonError
   get    "/timespans"  $ timespans      dbPool
   get    "/clocks"     $ clocks         dbPool
+  get    "/users"      $ users          dbPool
   post   "/timespans"  $ postTimespan   dbPool
   post   "/clocks"     $ postClock      dbPool
   post   "/attributes" $ postAttribute  dbPool

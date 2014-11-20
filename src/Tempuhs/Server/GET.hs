@@ -110,3 +110,12 @@ clocks p = do
   let filters = [ClockName ==. x | x <- toList name] ++
                   [ClockId ==. mkKey x | x <- toList cid]
   runDatabase p $ liftAE . json =<< selectList filters [Asc ClockId]
+
+users :: ConnectionPool -> ActionE ()
+-- | 'users' serves a request for a list of 'User's.
+users p = do
+  name <- maybeParam "name"
+  uid  <- maybeParam "id"
+  let filters = [UserName ==. n       | n <- toList name] ++
+                [UserId   ==. mkKey i | i <- toList uid]
+  runDatabase p $ liftAE . json =<< selectList filters [Asc UserId]
