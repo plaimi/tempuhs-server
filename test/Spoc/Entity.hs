@@ -56,6 +56,11 @@ clockEntity :: Integer -> T.Text -> Entity Clock
 -- containing a 'Clock'.
 clockEntity k = Entity (mkKey k) . Clock
 
+roleEntity :: Integer -> T.Text -> Integer -> Entity Role
+-- | 'roleEntity' is a convenience function for constructing an 'Entity'
+-- containing a 'Role'.
+roleEntity k n ns = Entity (mkKey k) $ Role n (mkKey ns) Nothing
+
 userEntity :: Integer -> T.Text -> Entity User
 -- | 'userEntity' is a convenience function for constructing an 'Entity'
 -- containing a 'User'.

@@ -119,3 +119,14 @@ users p = do
   let filters = [UserName ==. n       | n <- toList name] ++
                 [UserId   ==. mkKey i | i <- toList uid]
   runDatabase p $ liftAE . json =<< selectList filters [Asc UserId]
+
+roles :: ConnectionPool -> ActionE ()
+-- | 'roles' serves a request for a list of 'Role's.
+roles p = do
+  name      <- maybeParam "name"
+  namespace <- maybeParam "namespace"
+  rid       <- maybeParam "id"
+  let filters = [RoleName      ==. n        | n  <- toList name]      ++
+                [RoleNamespace ==. mkKey ns | ns <- toList namespace] ++
+                [RoleId        ==. mkKey i  | i  <- toList rid]
+  runDatabase p $ liftAE . json =<< selectList filters [Asc RoleId]

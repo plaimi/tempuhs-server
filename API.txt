@@ -89,6 +89,27 @@ Get the user named "Luser", if any:
 Get the user with ID 1, if any:
   /users?id=1
 
+/roles
+=======
+Retrieve all roles that match the given criteria.
+  name: string, optional -- the name of a role
+  namespace: integer, optional -- the ID of the user whose namespace the role
+                               -- has
+  id: integer, optional -- the ID of a role
+
+Examples:
+---------
+Get a list of all roles:
+  /roles
+
+Get the role named "Rulle", if any:
+  /roles?name=Rulle
+
+Get the Role with ID 1, if any:
+  /roles?id=1
+
+Get the Role with the namespace of the user with ID 902, if any:
+  /roles?namespace=902
 
 
 ########
