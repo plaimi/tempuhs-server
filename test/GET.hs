@@ -45,7 +45,9 @@ import Spoc.Default
 import Spoc.Entity
   (
   clockEntity,
+  defaultRole,
   defaultTimespans,
+  defaultUser,
   roleEntity,
   specialTimespan,
   timespansSpecsAttrs,
@@ -177,10 +179,10 @@ usersSpec = do
       get "/users" >>= assertJSONOK ()
     it "returns user after insertion" $ do
       initUser
-      get "/users" >>= assertJSONOK [userEntity 1 "Luser"]
+      get "/users" >>= assertJSONOK [defaultUser]
     it "filters by name" $ do
       initUser
-      get "/users?name=Luser" >>= assertJSONOK [userEntity 1 "Luser"]
+      get "/users?name=Luser" >>= assertJSONOK [defaultUser]
       get "/users?name=Ruser" >>= assertJSONOK ()
 
 rolesSpec :: Spec
@@ -190,12 +192,12 @@ rolesSpec = do
       get "/roles" >>= assertJSONOK ()
     it "returns role after insertion" $ do
       initRole
-      get "/roles" >>= assertJSONOK [roleEntity 1 "Rulle" 1]
+      get "/roles" >>= assertJSONOK [defaultRole]
     it "filters by name" $ do
       initRole
-      get "/roles?name=Rulle" >>= assertJSONOK [roleEntity 1 "Rulle" 1]
+      get "/roles?name=Rulle" >>= assertJSONOK [defaultRole]
       get "/roles?name=Rolle" >>= assertJSONOK ()
     it "filters by namespace" $ do
       initRole
-      get "/roles?namespace=1" >>= assertJSONOK [roleEntity 1 "Rulle" 1]
+      get "/roles?namespace=1" >>= assertJSONOK [defaultRole]
       get "/roles?namespace=2" >>= assertJSONOK ()

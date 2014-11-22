@@ -1,3 +1,9 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
+
 {- |
 Module      :  $Header$
 Description :  Entities for tests.
@@ -11,8 +17,16 @@ import Control.Arrow
   (
   (***),
   )
+import Control.Lens
+  (
+  (.~),
+  (^.),
+  (&),
+  _1,
+  )
 import Data.Aeson
   (
+  ToJSON,
   toJSON,
   )
 import Data.Functor
@@ -26,6 +40,10 @@ import Data.Maybe
 import Data.Stringable
   (
   toText,
+  )
+import Data.Time.Clock
+  (
+  UTCTime,
   )
 import Database.Persist
   (
@@ -50,6 +68,24 @@ import Tempuhs.Server.Database
   (
   mkKey,
   )
+
+instance HasRubbish a (Maybe UTCTime)
+      => HasRubbish (Entity a) (Maybe UTCTime) where
+  rubbish f (Entity a b) = Entity a <$> rubbish f b
+
+instance HasRubbish a (Maybe UTCTime)
+      => HasRubbish (a, b) (Maybe UTCTime) where
+  rubbish = _1 . rubbish
+
+(=^=) :: (HasRubbish a (Maybe UTCTime), ToJSON a) => [a] -> [a] -> Bool
+-- | '(=^=)' takes two lists of GET results, and checks if the results in
+-- the first list is the same as rubbished versions of the useful results in
+-- the second result.
+(a:as) =^= (b:bs) =
+  let rb = b ^. rubbish
+  in  isJust rb && toJSON (a & rubbish .~ rb) == toJSON b && as =^= bs
+[] =^= [] = True
+_  =^= _  = False
 
 clockEntity :: Integer -> T.Text -> Entity Clock
 -- | 'clockEntity' is a convenience function for constructing an 'Entity'
@@ -133,24 +169,19 @@ specialTimespan p =
   Entity (mkKey 2) $
          Timespan (mkKey <$> p) (mkKey 1) (-10) (-9) (-10) (-9) 1 Nothing
 
-rubbishP :: [(Entity Timespan, [Entity TimespanAttribute])]
-         -> [(Entity Timespan, [Entity TimespanAttribute])]
-         -> Bool
--- | 'rubbishP' takes two GET /timespans results, and checks if the 'Timespan'
--- within the second result is the same as a rubbished version of the useful
--- timespan in the first result.
-rubbishP ((Entity ek ev,_):es) ((f@(Entity _ fv),_):fs) =
-  let fr = timespanRubbish fv
-  in  isJust fr                                                &&
-      toJSON (Entity ek ev {timespanRubbish = fr}) == toJSON f &&
-      rubbishP es fs
-rubbishP [] []                                          = True
-rubbishP _  []                                          = False
-rubbishP []  _                                          = False
-
 mkAttributeEntities :: [AttributePair] -> [Entity TimespanAttribute]
 -- | 'mkAttributeEntities' takes a list of key-value pairs and makes
 -- a '[Entity TimespanAttribute]'.
 mkAttributeEntities as =
   [ attributeEntity i 1 k v
   | (i, (k, v)) <- [1 .. ] `zip` map (toText *** toText) as ]
+
+defaultRole :: Entity Role
+-- | 'defaultRole' is a helper value for the often used
+-- 'Init.initRole'.
+defaultRole = Entity (mkKey 1) $ Role "Rulle" (mkKey 1) Nothing
+
+defaultUser :: Entity User
+-- | 'defaultUser' is a helper value for the often used
+-- 'Init.initUser'.
+defaultUser = Entity (mkKey 1) $ User "Luser" Nothing

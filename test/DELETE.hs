@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -11,6 +12,23 @@ Maintainer  :  tempuhs@plaimi.net
   deleteSpec,
   ) where
 
+import Data.Aeson
+  (
+  FromJSON,
+  ToJSON,
+  )
+import Data.ByteString.Char8
+  (
+  pack,
+  )
+import Data.Time.Clock
+  (
+  UTCTime,
+  )
+import Network.Wai.Test
+  (
+  Session,
+  )
 import Test.Hspec
   (
   Spec,
@@ -29,12 +47,16 @@ import Spoc.Assert
   )
 import Spoc.Entity
   (
+  (=^=),
+  defaultRole,
   defaultTimespans,
-  rubbishP,
+  defaultUser,
   )
 import Spoc.Init
   (
   initDefaultTimespan,
+  initRole,
+  initUser,
   )
 import Spoc.JSON
   (
@@ -47,20 +69,35 @@ import Spoc.Request
   get,
   )
 
+import Tempuhs.Chronology
+
 deleteSpec :: Spec
 -- | 'deleteSpec' runs the DELETE 'Spec's.
-deleteSpec = timespansSpec
+deleteSpec = do
+  timespansSpec
+  rolesSpec
+  usersSpec
+
+rubbishSpec :: (HasRubbish d (Maybe UTCTime), FromJSON d, ToJSON d)
+            => String -> Session () -> [d] -> Spec
+rubbishSpec f i d = do
+  describe ("DELETE /" ++ f ++ "s") $ do
+    it ("rubbishes a " ++ f) initDelete
+    it ("returns the rubbished " ++ f) $ do
+      initDelete
+      get (pack $ "/" ++ f ++ "s?rubbish=2000-01-01") >>= \r -> do
+        assertStatus 200 r
+        assertJSON ("a rubbished version of: " ++ showJSON d) r ((=^=) d)
+  where
+    initDelete = i >> delete (pack $ "/" ++ f ++ "s?" ++ f ++ "=1")
+                   >>= assertJSONOK jsonSuccess
+
 
 timespansSpec :: Spec
-timespansSpec = do
-  describe "DELETE /timespans" $ do
-    it "rubbishes a timespan" $ do
-      initDefaultTimespan
-      delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
-    it "returns the rubbished timespan" $ do
-      initDefaultTimespan
-      delete "/timespans?timespan=1" >>= assertJSONOK jsonSuccess
-      get "/timespans?rubbish=2000-01-01" >>= \r -> do
-        assertStatus 200 r
-        assertJSON ("a rubbished version of: " ++ showJSON defaultTimespans)
-                   r (rubbishP defaultTimespans)
+timespansSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
+
+rolesSpec :: Spec
+rolesSpec = rubbishSpec "role" initRole [defaultRole]
+
+usersSpec :: Spec
+usersSpec =  rubbishSpec "user" initUser [defaultUser]

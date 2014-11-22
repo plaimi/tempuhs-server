@@ -109,3 +109,14 @@ defaultParam :: Parsable a => a -> Text -> ActionE a
 -- | 'defaultParam' looks up a parametre and returns a default value if the
 -- parametre is not found.
 defaultParam d p = fromMaybe d <$> maybeParam p
+
+withParam :: Parsable a => Text -> (a -> ActionE (Maybe (b))) -> ActionE b
+-- | 'withParam' looks up a parametre with 'paramE', and gives it to the
+-- passed in function, and returns either the result of the function, if it is
+-- 'Just', else it 'raise's an 'errInvalidParam' with the parametre.
+withParam p f = do
+  q <- paramE p
+  r <- f q
+  case r of
+    Just s  -> return s
+    Nothing -> raise . errInvalidParam . toStrict $ p

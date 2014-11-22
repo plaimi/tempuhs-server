@@ -246,15 +246,19 @@ Add the Rulle role with the namespace of the username of the user with ID 902:
 # DELETE #
 ##########
 /timespans
+/roles
+/users
 ==========
-Rubbishes a timespan.
-  timespan -- the ID of the timespan to rubbish.
+Rubbishes a row. Pass in the name of the table in singular form + the ID of
+the row you want to delete.
 
 Examples
 --------
-Rubbish the πρωτόπλαστος:
-  timespan=1
+Rubbish the timespan with ID 1:
+/timespans/timespan=1
 
-Rubbish the Answer to The Ultimate Question of Life, the Universe, and
-Everything:
-  timespan=42
+Rubbish the role with ID 2:
+/roles/role=2
+
+Rubbishing other things and IDs is left as an exercise for the frontend
+engineer...

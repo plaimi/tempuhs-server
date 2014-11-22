@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {- |
 Module      :  $Header$
@@ -13,24 +15,35 @@ import Control.Monad.IO.Class
   (
   liftIO,
   )
+import Data.Functor
+  (
+  (<$>),
+  )
+import Data.Text.Lazy
+  (
+  Text,
+  )
 import Data.Time.Clock
   (
+  UTCTime,
   getCurrentTime,
   )
 import Database.Persist
   (
-  Key,
   (=.),
   get,
   update,
   )
+import Database.Persist.Class
+  (
+  EntityField,
+  PersistEntity,
+  PersistEntityBackend,
+  )
 import Database.Persist.Sql
   (
   ConnectionPool,
-  )
-import Web.Scotty.Trans
-  (
-  param,
+  SqlBackend,
   )
 
 import Tempuhs.Chronology
@@ -40,23 +53,42 @@ import Tempuhs.Server.Database
   mkKey,
   runDatabase,
   )
+import Tempuhs.Server.Param
+  (
+  withParam,
+  )
 import Tempuhs.Server.Spock
   (
   ActionE,
-  errInvalidParam,
-  jsonError,
   jsonSuccess,
   )
 
 deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
-deleteTimespan p = do
-  timespan <- param  "timespan"
-  now      <- liftIO getCurrentTime
-  runDatabase p $ do
-    let tsId = mkKey timespan :: Key Timespan
-    maybeTimespan <- get tsId
-    case maybeTimespan of
-      Just _  ->
-        update tsId [TimespanRubbish =. Just now] >> liftAE jsonSuccess
-      Nothing -> liftAE $ jsonError $ errInvalidParam "timespan"
+deleteTimespan = nowow "timespan" TimespanRubbish
+
+deleteRole :: ConnectionPool -> ActionE ()
+-- | 'deleteRole' updates the rubbish field of an existing 'Role'.
+deleteRole = nowow "role" RoleRubbish
+
+deleteUser :: ConnectionPool -> ActionE ()
+-- | 'deleteUser' updates the rubbish field of an existing 'User'.
+deleteUser = nowow "user" UserRubbish
+
+nowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
+       => Text
+       -> EntityField v (Maybe UTCTime)
+       -> ConnectionPool
+       -> ActionE ()
+-- | 'nowow' takes a parametre to look up. If the row exists, it sets the
+-- passed in field to 'getCurrentTime'. If not, an error on the parametre is
+-- raised per 'withParam'.
+nowow p f c =
+  withParam p $ \r -> do
+    now <- liftIO getCurrentTime
+    runDatabase c $ do
+      let k = mkKey r
+      mr <- get k
+      case mr of
+        Just _  -> return <$> (update k [f =. Just now] >> liftAE jsonSuccess)
+        Nothing -> return Nothing
