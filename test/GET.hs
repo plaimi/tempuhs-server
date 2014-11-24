@@ -48,10 +48,8 @@ import Spoc.Entity
   defaultRole,
   defaultTimespans,
   defaultUser,
-  roleEntity,
   specialTimespan,
   timespansSpecsAttrs,
-  userEntity,
   )
 import Spoc.Init
   (
