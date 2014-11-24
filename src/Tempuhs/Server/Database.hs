@@ -109,10 +109,10 @@ clockParam :: L.Text -> SqlPersistA (Entity Clock)
 -- | 'clockParam' looks up an @'Entity' 'Clock'@ from the parametre of the
 -- given name, raising 'errInvalidParam' if there is no match.
 clockParam p = do
-  clock <- liftAE $ paramE p
-  maybeClock <- getBy $ UniqueClock clock
-  case maybeClock of
-    Just c  -> return c
+  c  <- liftAE $ paramE p
+  mc <- getBy $ UniqueClock c
+  case mc of
+    Just d  -> return d
     Nothing -> liftAE $ raise $ errInvalidParam $ L.toStrict p
 
 (=..) :: PersistField v => EntityField f v -> Maybe v -> [Update f]

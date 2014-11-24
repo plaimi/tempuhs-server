@@ -113,9 +113,9 @@ timespanEntity :: Z.Set Specified -> Entity Timespan
 -- an 'Entity' containing a 'Timespan', based on the passed in 'Specified's.
 timespanEntity ss =
   Entity (mkKey 1) $
-    Timespan Nothing (mkKey 1) 10 beginMax endMin endMax 1 Nothing
+    Timespan Nothing (mkKey 1) 10 bMax eMin eMax 1 Nothing
   where
-    (beginMax, endMin, endMax) =
+    (bMax, eMin, eMax) =
       case ("beginMax" `Z.member` ss
            ,"endMin"   `Z.member` ss
            ,"endMax"   `Z.member` ss) of

@@ -79,15 +79,15 @@ postTimespan :: ConnectionPool -> ActionE ()
 -- | 'postTimespan' inserts a new 'Timespan' into the database with the given
 -- attributes. Or, if the ID of an existing 'Timespan' is given, updates that
 -- instead.
-postTimespan p = do
+postTimespan pool = do
   timespan      <- maybeParam     "timespan"
   maybeParent   <- maybeParam     "parent"
   maybeBeginMin <- maybeParam     "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
   maybeEndMin   <- maybeParam     "endMin"
   maybeEndMax   <- maybeParam     "endMax"
-  weight        <- defaultParam 1 "weight"
-  rubbish       <- return Nothing
+  w             <- defaultParam 1 "weight"
+  r             <- return Nothing
   -- If it ends with an '_', consider it an attribute. "&foo_=fu&bar_=baz".
   -- attrs is a list of key-value tuples.
   attrs         <- filter (L.isSuffixOf "_" . fst) <$> params
@@ -96,17 +96,17 @@ postTimespan p = do
   -- "parent="   -> Just Nothing
   -- "parent"    -> Just Nothing
   -- Unspecified -> Nothing
-  let parent = fmap mkKey . maybeUnwrap <$> maybeParent
-      as     = map (both L.toStrict . first L.init) attrs
+  let p  = fmap mkKey . maybeUnwrap <$> maybeParent
+      as = map (both L.toStrict . first L.init) attrs
 
-  runDatabase p $ do
+  runDatabase pool $ do
     liftAE . jsonKey =<< case timespan of
       Just i  -> do
         let k = mkKey i
-        clock <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
+        c <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
 
-        update k $ concat [TimespanParent   =.. parent
-                          ,TimespanClock    =.. (entityKey <$> clock)
+        update k $ concat [TimespanParent   =.. p
+                          ,TimespanClock    =.. (entityKey <$> c)
                           ,TimespanBeginMin =.. maybeBeginMin
                           ,TimespanBeginMax =.. maybeBeginMax
                           ,TimespanEndMin   =.. maybeEndMin
@@ -115,24 +115,22 @@ postTimespan p = do
         mapM_ (uncurry (updateAttribute k) . second Just) as
         return k
       Nothing -> do
-        beginMin <- liftAE $ paramE "beginMin"
+        bMin <- liftAE $ paramE "beginMin"
         -- If beginMax isn't specified, set it to beginMin + 1
-        let beginMax         = fromMaybe (beginMin + (1 :: ProperTime))
-                                         maybeBeginMax
+        let bMax         = fromMaybe (bMin + (1 :: ProperTime)) maybeBeginMax
         -- If endMin isn't specified, set it to endMax-1.
         -- If endMax isn't specified, set it to endMin+1.
         -- If neither are specified, set them to beginMax and beginMax+1.
-            (endMin, endMax) =
+            (eMin, eMax) =
               case (maybeEndMin, maybeEndMax) of
                 (Nothing, Nothing) ->
-                  (beginMin
-                  ,fromMaybe (beginMin + (1 :: ProperTime)) maybeBeginMax)
+                  (bMin, fromMaybe (bMin + (1 :: ProperTime)) maybeBeginMax)
                 (Just a, Nothing)  -> (a, a + (1 :: ProperTime))
                 (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
                 (Just a, Just b)   -> (a, b)
-        clock    <- clockParam "clock"
-        tid      <- insert $ Timespan (join parent) (entityKey clock) beginMin
-                                 beginMax endMin endMax weight rubbish
+        c    <- clockParam "clock"
+        tid  <- insert $ Timespan (join p) (entityKey c) bMin bMax eMin eMax
+                                  w r
         mapM_ (insert . uncurry (TimespanAttribute tid)) as
         return tid
 
@@ -148,14 +146,14 @@ postClock :: ConnectionPool -> ActionE ()
 -- | 'postClock' inserts a new 'Clock' into the database, or updates an
 -- existing one, from a request.
 postClock p = do
-  clock <- maybeParam "clock"
-  name  <- paramE     "name"
+  c <- maybeParam "clock"
+  n <- paramE     "name"
   runDatabase p $
-    let c = Clock name
-    in  liftAE . jsonKey =<< case clock of
+    let d = Clock n
+    in  liftAE . jsonKey =<< case c of
       Just i  -> let k = mkKey i
-                 in  repsert k c >> return k
-      Nothing -> insert c
+                 in  repsert k d >> return k
+      Nothing -> insert d
 
 updateAttribute :: Key Timespan -> T.Text -> Maybe T.Text -> SqlPersistA ()
 -- | 'updateAttribute' updates the 'TimespanAttribute' of a 'Timespan'. It
@@ -189,14 +187,14 @@ postUser :: ConnectionPool -> ActionE ()
 -- | 'postUser' inserts a new 'User' into the database, or replaces an
 -- existing one, from a request.
 postUser p = do
-  user <- maybeParam "user"
-  name  <- paramE    "name"
+  u <- maybeParam "user"
+  n <- paramE    "name"
   runDatabase p $
-    let u = User name Nothing
-    in  liftAE . jsonKey =<< case user of
+    let v = User n Nothing
+    in  liftAE . jsonKey =<< case u of
       Just i  -> let k = mkKey i
-                 in  repsert k u >> return k
-      Nothing -> insert u
+                 in  repsert k v >> return k
+      Nothing -> insert v
 
 postRole :: ConnectionPool -> ActionE ()
 -- | 'postRole' inserts a new 'Role' into the database, or updates an
