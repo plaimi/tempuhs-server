@@ -92,7 +92,6 @@ rubbishSpec f i d = do
     initDelete = i >> delete (pack $ "/" ++ f ++ "s?" ++ f ++ "=1")
                    >>= assertJSONOK jsonSuccess
 
-
 timespansSpec :: Spec
 timespansSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
 
