@@ -70,13 +70,13 @@ import Spoc.Request
 getSpec :: Spec
 -- | 'getSpec' runs the GET 'Spec's.
 getSpec = do
-  clockSpec
+  clocksSpec
   timespansSpec
   usersSpec
   rolesSpec
 
-clockSpec :: Spec
-clockSpec = do
+clocksSpec :: Spec
+clocksSpec = do
   describe "GET /clocks" $ do
     it "initially returns []" $
       get "/clocks" >>= assertJSONOK ()
