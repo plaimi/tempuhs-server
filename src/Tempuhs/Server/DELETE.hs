@@ -67,13 +67,13 @@ deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
 deleteTimespan = nowow "timespan" TimespanRubbish
 
-deleteRole :: ConnectionPool -> ActionE ()
--- | 'deleteRole' updates the rubbish field of an existing 'Role'.
-deleteRole = nowow "role" RoleRubbish
-
 deleteUser :: ConnectionPool -> ActionE ()
 -- | 'deleteUser' updates the rubbish field of an existing 'User'.
 deleteUser = nowow "user" UserRubbish
+
+deleteRole :: ConnectionPool -> ActionE ()
+-- | 'deleteRole' updates the rubbish field of an existing 'Role'.
+deleteRole = nowow "role" RoleRubbish
 
 nowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
        => Text

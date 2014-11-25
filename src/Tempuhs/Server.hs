@@ -58,11 +58,11 @@ serve dbPool = do
   get    "/users"      $ users          dbPool
   get    "/roles"      $ roles          dbPool
   post   "/timespans"  $ postTimespan   dbPool
-  post   "/clocks"     $ postClock      dbPool
   post   "/attributes" $ postAttribute  dbPool
+  post   "/clocks"     $ postClock      dbPool
+  post   "/users"      $ postUser       dbPool
   post   "/roles"      $ postRole       dbPool
   delete "/timespans"  $ deleteTimespan dbPool
-  delete "/roles"      $ deleteRole     dbPool
   delete "/users"      $ deleteUser     dbPool
-  post   "/users"      $ postUser       dbPool
+  delete "/roles"      $ deleteRole     dbPool
   notFound $ jsonError errNotFound
