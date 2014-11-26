@@ -110,3 +110,12 @@ initRole :: Session ()
 -- response.
 initRole = initUser >>
            post "/roles" "name=Rulle&namespace=1" >>= assertJSONOK (jsonKey 1)
+
+initPermissionset :: Session ()
+-- | 'initPermissionset' does 'initDefaultTimespan' and 'initRole', and then
+-- inserts a permissionset, and checks the response.
+initPermissionset = do
+  initDefaultTimespan
+  initRole
+  post "/permissionsets" ("timespan=1&role=1&own=True&read=True" `L.append`
+                         "&write=True&share=True") >>= assertJSONOK (jsonKey 1)

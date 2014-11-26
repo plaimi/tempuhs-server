@@ -24,6 +24,7 @@ import Web.Scotty.Trans
 import Tempuhs.Server.GET
   (
   clocks,
+  permissionsets,
   roles,
   timespans,
   users,
@@ -32,6 +33,7 @@ import Tempuhs.Server.POST
   (
   postAttribute,
   postClock,
+  postPermissionsets,
   postRole,
   postTimespan,
   postUser,
@@ -41,6 +43,7 @@ import Tempuhs.Server.DELETE
   deleteRole,
   deleteTimespan,
   deleteUser,
+  deletePermissionsets,
   )
 import Tempuhs.Server.Spock
   (
@@ -53,16 +56,19 @@ serve :: ConnectionPool -> ScottyE ()
 -- | 'serve' is the scotty application for tempuhs.
 serve dbPool = do
   defaultHandler jsonError
-  get    "/timespans"  $ timespans      dbPool
-  get    "/clocks"     $ clocks         dbPool
-  get    "/users"      $ users          dbPool
-  get    "/roles"      $ roles          dbPool
-  post   "/timespans"  $ postTimespan   dbPool
-  post   "/attributes" $ postAttribute  dbPool
-  post   "/clocks"     $ postClock      dbPool
-  post   "/users"      $ postUser       dbPool
-  post   "/roles"      $ postRole       dbPool
-  delete "/timespans"  $ deleteTimespan dbPool
-  delete "/users"      $ deleteUser     dbPool
-  delete "/roles"      $ deleteRole     dbPool
+  get    "/timespans"      $ timespans            dbPool
+  get    "/clocks"         $ clocks               dbPool
+  get    "/users"          $ users                dbPool
+  get    "/roles"          $ roles                dbPool
+  get    "/permissionsets" $ permissionsets       dbPool
+  post   "/timespans"      $ postTimespan         dbPool
+  post   "/attributes"     $ postAttribute        dbPool
+  post   "/clocks"         $ postClock            dbPool
+  post   "/users"          $ postUser             dbPool
+  post   "/roles"          $ postRole             dbPool
+  post   "/permissionsets" $ postPermissionsets   dbPool
+  delete "/timespans"      $ deleteTimespan       dbPool
+  delete "/users"          $ deleteUser           dbPool
+  delete "/roles"          $ deleteRole           dbPool
+  delete "/permissionsets" $ deletePermissionsets dbPool
   notFound $ jsonError errNotFound

@@ -129,3 +129,14 @@ roles p = do
                 [RoleNamespace ==. mkKey rs | rs <- toList s] ++
                 [RoleId        ==. mkKey ri | ri <- toList r]
   runDatabase p $ liftAE . json =<< selectList filters [Asc RoleId]
+
+permissionsets :: ConnectionPool -> ActionE ()
+-- | 'permissionsets' serves a request for a list of 'Permissionset's.
+permissionsets p = do
+  ps <- maybeParam "id"
+  t  <- maybeParam "timespan"
+  r  <- maybeParam "role"
+  let filters = [PermissionsetId       ==. mkKey pss | pss <- toList ps] ++
+                [PermissionsetTimespan ==. mkKey ti  | ti  <- toList t ] ++
+                [PermissionsetRole     ==. mkKey ri  | ri  <- toList r ]
+  runDatabase p $ liftAE . json =<< selectList filters [Asc PermissionsetId]

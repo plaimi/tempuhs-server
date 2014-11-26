@@ -111,6 +111,26 @@ Get the Role with ID 1, if any:
 Get the Role with the namespace of the user with ID 902, if any:
   /roles?namespace=902
 
+/permissionsets
+===============
+Retrieve all permissionsets that match the given criteria.
+  timespan: integer, optional -- ID of a timespan
+  role: integer, optional -- ID of a role
+
+Examples
+--------
+Get a list of all permissionsets:
+  /permissionsets
+
+Get all permissionsets of timespan 1:
+  /permissionsets?timespan=1
+
+Get all permissionsets of role 1:
+  /permissionsets?role=1
+
+Get the permissionset of timespan 1 and role 1:
+  /permissionsets?timespan=1&role=1
+
 
 ########
 # POST #
@@ -241,6 +261,31 @@ Examples
 Add the Rulle role with the namespace of the username of the user with ID 902:
   name=Rulle&namespace=902
 
+/permissionsets
+===============
+Inserts a new permissionset, or modifies an existing one.
+
+To POST a new permissionset, both a timespan ID and a role ID must be passed.
+If passing a permissionset ID, you change the permissionset with that ID by
+modifying the fields you pass. See the examples.
+
+  permissionset: integer, optional -- ID of the permissionset to modify
+  timespan: integer, optional -- ID of the permissionset's timespan
+  role: integer, optional -- ID of the permissionset's role
+  own: bool, optional -- whether the role has own rights to the timespan
+  read: bool, optional -- whether the role has read rights to the timespan
+  write: bool, optional -- whether the role has write rights to the timespan
+  share: bool, optional -- whether the role has share rights to the timespan
+
+Examples
+--------
+Add a permissionset that says that role 1 has all rights for timespan 1:
+  timespan=1&role=1&own=True&read=True&write=True&share=True
+
+Modify the permissionset with ID 1 so that its role may not share its
+timespan:
+  permissions=1&share=False
+
 
 ##########
 # DELETE #
@@ -248,6 +293,7 @@ Add the Rulle role with the namespace of the username of the user with ID 902:
 /timespans
 /roles
 /users
+/permissionsets
 ==========
 Rubbishes a row. Pass in the name of the table in singular form + the ID of
 the row you want to delete.

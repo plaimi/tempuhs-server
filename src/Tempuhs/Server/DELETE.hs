@@ -75,6 +75,11 @@ deleteRole :: ConnectionPool -> ActionE ()
 -- | 'deleteRole' updates the rubbish field of an existing 'Role'.
 deleteRole = nowow "role" RoleRubbish
 
+deletePermissionsets :: ConnectionPool -> ActionE ()
+-- | 'deletePermissionsets' updates the rubbish field of an existing
+-- 'Permissionset'.
+deletePermissionsets = nowow "permissionset" PermissionsetRubbish
+
 nowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
        => Text
        -> EntityField v (Maybe UTCTime)
