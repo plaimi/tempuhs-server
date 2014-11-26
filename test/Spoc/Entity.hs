@@ -176,15 +176,15 @@ mkAttributeEntities as =
   [ attributeEntity i 1 k v
   | (i, (k, v)) <- [1 .. ] `zip` map (toText *** toText) as ]
 
-defaultRole :: Entity Role
--- | 'defaultRole' is a helper value for the often used
--- 'Init.initRole'.
-defaultRole = Entity (mkKey 1) $ Role "Rulle" (mkKey 1) Nothing
-
 defaultUser :: Entity User
 -- | 'defaultUser' is a helper value for the often used
 -- 'Init.initUser'.
 defaultUser = Entity (mkKey 1) $ User "Luser" Nothing
+
+defaultRole :: Entity Role
+-- | 'defaultRole' is a helper value for the often used
+-- 'Init.initRole'.
+defaultRole = Entity (mkKey 1) $ Role "Rulle" (mkKey 1) Nothing
 
 defaultPermissionset :: Entity Permissionset
 -- | 'defaultPermissionset' is a helper value for the often used
