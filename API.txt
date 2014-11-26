@@ -241,6 +241,31 @@ Examples
 Add the Rulle role with the namespace of the username of the user with ID 902:
   name=Rulle&namespace=902
 
+/permissionsets
+===============
+Inserts a new permissionset, or modifies an existing one.
+
+To POST a new permissionset, both a timespan ID and a role ID must be passed.
+If passing a permissionset ID, you change the permissionset with that ID by
+modifying the fields you pass. See the examples.
+
+  permissionset: integer, optional -- ID of the permissionset to modify
+  timespan: integer, optional -- ID of the permissionset's timespan
+  role: integer, optional -- ID of the permissionset's role
+  own: bool, optional -- whether the role has own rights to the timespan
+  read: bool, optional -- whether the role has read rights to the timespan
+  write: bool, optional -- whether the role has write rights to the timespan
+  share: bool, optional -- whether the role has share rights to the timespan
+
+Examples
+--------
+Add a permissionset that says that role 1 has all rights for timespan 1:
+  timespan=1&role=1&own=True&read=True&write=True&share=True
+
+Modify the permissionset with ID 1 so that its role may not share its
+timespan:
+  permissions=1&share=False
+
 
 ##########
 # DELETE #

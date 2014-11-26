@@ -11,6 +11,8 @@ Maintainer  :  tempuhs@plaimi.net
   postSpec,
   ) where
 
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Lazy.Char8 as LB8
 import Control.Monad
   (
   forM_,
@@ -56,6 +58,7 @@ import Spoc.Init
   initClock,
   initModTimespan,
   initRole,
+  initPermissionset,
   initSubTimespan,
   initTimespanAttrs,
   initTimespanSpecs,
@@ -80,6 +83,7 @@ postSpec = do
   attributesSpec
   usersSpec
   rolesSpec
+  permissionsetsSpec
 
 clocksSpec :: Spec
 clocksSpec = do
@@ -161,3 +165,22 @@ rolesSpec = do
       post "/users" "user=2&name=Joe" >>= assertJSONOK (jsonKey 2)
       post "/roles" "role=1&namespace=2" >>= assertJSONOK (jsonKey 1)
     itReturnsMissingParam $ post "/roles" ""
+
+permissionsetsSpec :: Spec
+permissionsetsSpec = do
+  describe "POST /permissionsets" $ do
+    it ("inserts a timespan and role and gives the role all permissions " ++
+        "for the timespan -- the permissionset has key 1")
+      initPermissionset
+    it ("won't insert two permissionsets for the same timespan and role") $ do
+      initPermissionset
+      post "/permissionsets" ("timespan=1&role=1&own=True" `LB.append`
+            "&read=True&write=True&share=True") >>=
+        assertJSONError 500 "INTERNAL"
+    mapM_ modify ["own", "read", "write", "share"]
+  where modify n =
+          it ("modifies an existing permissionset's " ++ n) $ do
+            initPermissionset
+            post "/permissionsets" ("permissionset=1&" `LB.append` LB8.pack n
+                                 `LB.append` "=False")
+              >>= assertJSONOK (jsonKey 1)

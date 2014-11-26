@@ -216,3 +216,33 @@ postRole p = do
           n  <- liftAE $ paramE "name"
           ns <- liftAE $ paramE "namespace"
           return =<< insert $ Role n (mkKey ns) Nothing
+
+postPermissionsets :: ConnectionPool -> ActionE ()
+-- | 'postPermissionsets' inserts a 'Permissionset' into the database, or
+-- updates an existing one, from a request.
+postPermissionsets p = do
+  ps <- maybeParam "permissionset"
+  runDatabase p $
+    liftAE . jsonKey =<<
+      case ps of
+        Just i -> do
+          let k = mkKey i
+          o   <- liftAE $ maybeParam "own"
+          r   <- liftAE $ maybeParam "read"
+          w   <- liftAE $ maybeParam "write"
+          s   <- liftAE $ maybeParam "share"
+          update (mkKey i) $ concat [PermissionsetOwn      =.. o
+                                    ,PermissionsetRead     =.. r
+                                    ,PermissionsetWrite    =.. w
+                                    ,PermissionsetShare    =.. s
+                                    ]
+          return k
+        Nothing -> do
+          tid <- liftAE $ paramE "timespan"
+          rid <- liftAE $ paramE "role"
+          o   <- liftAE $ paramE "own"
+          r   <- liftAE $ paramE "read"
+          w   <- liftAE $ paramE "write"
+          s   <- liftAE $ paramE "share"
+          return =<< insert $ Permissionset (mkKey tid) (mkKey rid) o r w s
+                                            Nothing
