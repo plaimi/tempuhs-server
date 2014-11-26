@@ -106,7 +106,7 @@ initUser :: Session ()
 initUser = post "/users" "name=Luser" >>= assertJSONOK (jsonKey 1)
 
 initRole :: Session ()
--- | 'initRole' inserts a role into an empty database and checks the
+-- | 'initRole' does 'initUser', and then inserts a role and checks the
 -- response.
 initRole = initUser >>
            post "/roles" "name=Rulle&namespace=1" >>= assertJSONOK (jsonKey 1)
