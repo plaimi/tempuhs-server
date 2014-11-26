@@ -293,6 +293,7 @@ timespan:
 /timespans
 /roles
 /users
+/permissionsets
 ==========
 Rubbishes a row. Pass in the name of the table in singular form + the ID of
 the row you want to delete.

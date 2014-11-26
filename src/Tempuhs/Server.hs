@@ -43,6 +43,7 @@ import Tempuhs.Server.DELETE
   deleteRole,
   deleteTimespan,
   deleteUser,
+  deletePermissionsets,
   )
 import Tempuhs.Server.Spock
   (
@@ -55,18 +56,19 @@ serve :: ConnectionPool -> ScottyE ()
 -- | 'serve' is the scotty application for tempuhs.
 serve dbPool = do
   defaultHandler jsonError
-  get    "/timespans"      $ timespans          dbPool
-  get    "/clocks"         $ clocks             dbPool
-  get    "/users"          $ users              dbPool
-  get    "/roles"          $ roles              dbPool
-  get    "/permissionsets" $ permissionsets     dbPool
-  post   "/timespans"      $ postTimespan       dbPool
-  post   "/clocks"         $ postClock          dbPool
-  post   "/attributes"     $ postAttribute      dbPool
-  post   "/roles"          $ postRole           dbPool
-  post   "/permissionsets" $ postPermissionsets dbPool
-  delete "/timespans"      $ deleteTimespan     dbPool
-  delete "/roles"          $ deleteRole         dbPool
-  delete "/users"          $ deleteUser         dbPool
-  post   "/users"          $ postUser           dbPool
+  get    "/timespans"      $ timespans            dbPool
+  get    "/clocks"         $ clocks               dbPool
+  get    "/users"          $ users                dbPool
+  get    "/roles"          $ roles                dbPool
+  get    "/permissionsets" $ permissionsets       dbPool
+  post   "/timespans"      $ postTimespan         dbPool
+  post   "/clocks"         $ postClock            dbPool
+  post   "/attributes"     $ postAttribute        dbPool
+  post   "/roles"          $ postRole             dbPool
+  post   "/permissionsets" $ postPermissionsets   dbPool
+  delete "/timespans"      $ deleteTimespan       dbPool
+  delete "/roles"          $ deleteRole           dbPool
+  delete "/users"          $ deleteUser           dbPool
+  delete "/permissionsets" $ deletePermissionsets dbPool
+  post   "/users"          $ postUser             dbPool
   notFound $ jsonError errNotFound

@@ -48,6 +48,7 @@ import Spoc.Assert
 import Spoc.Entity
   (
   (=^=),
+  defaultPermissionset,
   defaultRole,
   defaultTimespans,
   defaultUser,
@@ -55,6 +56,7 @@ import Spoc.Entity
 import Spoc.Init
   (
   initDefaultTimespan,
+  initPermissionset,
   initRole,
   initUser,
   )
@@ -77,6 +79,7 @@ deleteSpec = do
   timespansSpec
   rolesSpec
   usersSpec
+  permissionsetsSpec
 
 rubbishSpec :: (HasRubbish d (Maybe UTCTime), FromJSON d, ToJSON d)
             => String -> Session () -> [d] -> Spec
@@ -101,3 +104,7 @@ rolesSpec = rubbishSpec "role" initRole [defaultRole]
 
 usersSpec :: Spec
 usersSpec =  rubbishSpec "user" initUser [defaultUser]
+
+permissionsetsSpec :: Spec
+permissionsetsSpec = rubbishSpec "permissionset" initPermissionset
+                                                 [defaultPermissionset]
