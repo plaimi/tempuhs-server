@@ -118,4 +118,4 @@ initPermissionset = do
   initDefaultTimespan
   initRole
   post "/permissionsets" ("timespan=1&role=1&own=True&read=True" `L.append`
-                         "&write=True&share=True") >>= assertJSONOK (jsonKey 1)
+                         "&write=True") >>= assertJSONOK (jsonKey 1)

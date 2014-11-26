@@ -175,9 +175,8 @@ permissionsetsSpec = do
     it ("won't insert two permissionsets for the same timespan and role") $ do
       initPermissionset
       post "/permissionsets" ("timespan=1&role=1&own=True" `LB.append`
-            "&read=True&write=True&share=True") >>=
-        assertJSONError 500 "INTERNAL"
-    mapM_ modify ["own", "read", "write", "share"]
+            "&read=True&write=True") >>= assertJSONError 500 "INTERNAL"
+    mapM_ modify ["own", "read", "write"]
   where modify n =
           it ("modifies an existing permissionset's " ++ n) $ do
             initPermissionset

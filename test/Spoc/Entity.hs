@@ -190,5 +190,5 @@ defaultPermissionset :: Entity Permissionset
 -- | 'defaultPermissionset' is a helper value for the often used
 -- 'Init.initPermissionset'.
 defaultPermissionset = Entity (mkKey 1) $
-                       Permissionset (mkKey 1) (mkKey 1) True True True True
+                       Permissionset (mkKey 1) (mkKey 1) True True True
                                      Nothing
