@@ -24,6 +24,7 @@ import Web.Scotty.Trans
 import Tempuhs.Server.GET
   (
   clocks,
+  permissionsets,
   roles,
   timespans,
   users,
@@ -58,6 +59,7 @@ serve dbPool = do
   get    "/clocks"         $ clocks             dbPool
   get    "/users"          $ users              dbPool
   get    "/roles"          $ roles              dbPool
+  get    "/permissionsets" $ permissionsets     dbPool
   post   "/timespans"      $ postTimespan       dbPool
   post   "/clocks"         $ postClock          dbPool
   post   "/attributes"     $ postAttribute      dbPool

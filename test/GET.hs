@@ -45,6 +45,7 @@ import Spoc.Default
 import Spoc.Entity
   (
   clockEntity,
+  defaultPermissionset,
   defaultRole,
   defaultTimespans,
   defaultUser,
@@ -56,6 +57,7 @@ import Spoc.Init
   initAttribute,
   initClock,
   initDefaultTimespan,
+  initPermissionset,
   initRole,
   initSubTimespan,
   initUser,
@@ -74,6 +76,7 @@ getSpec = do
   timespansSpec
   usersSpec
   rolesSpec
+  permissionsetsSpec
 
 clockSpec :: Spec
 clockSpec = do
@@ -199,3 +202,20 @@ rolesSpec = do
       initRole
       get "/roles?namespace=1" >>= assertJSONOK [defaultRole]
       get "/roles?namespace=2" >>= assertJSONOK ()
+
+permissionsetsSpec :: Spec
+permissionsetsSpec = do
+  describe "GET /permissionsets" $ do
+    it "initially returns []" $
+      get "/permissionsets" >>= assertJSONOK ()
+    it "returns a permissionset set after insertion" $ do
+      initPermissionset
+      get "/permissionsets" >>= assertJSONOK [defaultPermissionset]
+    it "filters by timespan" $ do
+      initPermissionset
+      get "/permissionsets?timespan=1" >>= assertJSONOK [defaultPermissionset]
+      get "/permissionsets?timespan=2" >>= assertJSONOK ()
+    it "filters by role" $ do
+      initPermissionset
+      get "/permissionsets?role=1" >>= assertJSONOK [defaultPermissionset]
+      get "/permissionsets?role=2" >>= assertJSONOK ()

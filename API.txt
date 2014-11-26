@@ -111,6 +111,26 @@ Get the Role with ID 1, if any:
 Get the Role with the namespace of the user with ID 902, if any:
   /roles?namespace=902
 
+/permissionsets
+===============
+Retrieve all permissionsets that match the given criteria.
+  timespan: integer, optional -- ID of a timespan
+  role: integer, optional -- ID of a role
+
+Examples
+--------
+Get a list of all permissionsets:
+  /permissionsets
+
+Get all permissionsets of timespan 1:
+  /permissionsets?timespan=1
+
+Get all permissionsets of role 1:
+  /permissionsets?role=1
+
+Get the permissionset of timespan 1 and role 1:
+  /permissionsets?timespan=1&role=1
+
 
 ########
 # POST #
