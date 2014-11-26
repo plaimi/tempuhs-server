@@ -80,7 +80,7 @@ postTimespan :: ConnectionPool -> ActionE ()
 -- attributes. Or, if the ID of an existing 'Timespan' is given, updates that
 -- instead.
 postTimespan pool = do
-  timespan      <- maybeParam     "timespan"
+  t             <- maybeParam     "timespan"
   maybeParent   <- maybeParam     "parent"
   maybeBeginMin <- maybeParam     "beginMin"
   maybeBeginMax <- maybeParam     "beginMax"
@@ -100,7 +100,7 @@ postTimespan pool = do
       as = map (both L.toStrict . first L.init) attrs
 
   runDatabase pool $ do
-    liftAE . jsonKey =<< case timespan of
+    liftAE . jsonKey =<< case t of
       Just i  -> do
         let k = mkKey i
         c <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
@@ -137,10 +137,10 @@ postTimespan pool = do
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
 postAttribute p = do
-  timespan <- paramE     "timespan"
-  key      <- paramE     "key"
-  value    <- maybeParam "value"
-  runDatabase p $ updateAttribute (mkKey timespan) key value
+  t     <- paramE     "timespan"
+  key   <- paramE     "key"
+  value <- maybeParam "value"
+  runDatabase p $ updateAttribute (mkKey t) key value
 
 postClock :: ConnectionPool -> ActionE ()
 -- | 'postClock' inserts a new 'Clock' into the database, or updates an
