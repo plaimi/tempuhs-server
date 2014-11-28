@@ -17,9 +17,13 @@ library
                        Tempuhs.Server.CLI
                        Tempuhs.Server.Database
                        Tempuhs.Server.DELETE
-                       Tempuhs.Server.GET
-                       Tempuhs.Server.POST
                        Tempuhs.Server.Param
+                       Tempuhs.Server.Requests
+                       Tempuhs.Server.Requests.Clock
+                       Tempuhs.Server.Requests.Permissionset
+                       Tempuhs.Server.Requests.Role
+                       Tempuhs.Server.Requests.Timespan
+                       Tempuhs.Server.Requests.User
                        Tempuhs.Server.Spock
   other-extensions:    FlexibleContexts
                        OverloadedStrings

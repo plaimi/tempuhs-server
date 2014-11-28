@@ -46,7 +46,6 @@ import Database.Persist.Sql
   SqlBackend,
   )
 
-import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
   liftAE,
@@ -62,23 +61,6 @@ import Tempuhs.Server.Spock
   ActionE,
   jsonSuccess,
   )
-
-deleteTimespan :: ConnectionPool -> ActionE ()
--- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
-deleteTimespan = nowow "timespan" TimespanRubbish
-
-deleteUser :: ConnectionPool -> ActionE ()
--- | 'deleteUser' updates the rubbish field of an existing 'User'.
-deleteUser = nowow "user" UserRubbish
-
-deleteRole :: ConnectionPool -> ActionE ()
--- | 'deleteRole' updates the rubbish field of an existing 'Role'.
-deleteRole = nowow "role" RoleRubbish
-
-deletePermissionsets :: ConnectionPool -> ActionE ()
--- | 'deletePermissionsets' updates the rubbish field of an existing
--- 'Permissionset'.
-deletePermissionsets = nowow "permissionset" PermissionsetRubbish
 
 nowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
        => Text

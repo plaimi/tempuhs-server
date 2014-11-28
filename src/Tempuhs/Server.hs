@@ -16,34 +16,16 @@ import Database.Persist.Sql
 import Web.Scotty.Trans
   (
   defaultHandler,
-  delete,
-  get,
   notFound,
-  post,
   )
-import Tempuhs.Server.GET
+
+import Tempuhs.Server.Requests
   (
-  clocks,
-  permissionsets,
-  roles,
-  timespans,
-  users,
-  )
-import Tempuhs.Server.POST
-  (
-  postAttribute,
-  postClock,
-  postPermissionsets,
-  postRole,
-  postTimespan,
-  postUser,
-  )
-import Tempuhs.Server.DELETE
-  (
-  deleteRole,
-  deleteTimespan,
-  deleteUser,
-  deletePermissionsets,
+  clockRequests,
+  permissionsetRequests,
+  roleRequests,
+  timespanRequests,
+  userRequests,
   )
 import Tempuhs.Server.Spock
   (
@@ -54,21 +36,11 @@ import Tempuhs.Server.Spock
 
 serve :: ConnectionPool -> ScottyE ()
 -- | 'serve' is the scotty application for tempuhs.
-serve dbPool = do
+serve p = do
   defaultHandler jsonError
-  get    "/timespans"      $ timespans            dbPool
-  get    "/clocks"         $ clocks               dbPool
-  get    "/users"          $ users                dbPool
-  get    "/roles"          $ roles                dbPool
-  get    "/permissionsets" $ permissionsets       dbPool
-  post   "/timespans"      $ postTimespan         dbPool
-  post   "/attributes"     $ postAttribute        dbPool
-  post   "/clocks"         $ postClock            dbPool
-  post   "/users"          $ postUser             dbPool
-  post   "/roles"          $ postRole             dbPool
-  post   "/permissionsets" $ postPermissionsets   dbPool
-  delete "/timespans"      $ deleteTimespan       dbPool
-  delete "/users"          $ deleteUser           dbPool
-  delete "/roles"          $ deleteRole           dbPool
-  delete "/permissionsets" $ deletePermissionsets dbPool
+  clockRequests         p
+  permissionsetRequests p
+  roleRequests          p
+  timespanRequests      p
+  userRequests          p
   notFound $ jsonError errNotFound

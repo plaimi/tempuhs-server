@@ -2,12 +2,12 @@
 
 {- |
 Module      :  $Header$
-Description :  The tempuhs server POST API.
+Description :  Timespan API.
 Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Tempuhs.Server.POST where
+-} module Tempuhs.Server.Requests.Timespan where
 
 import Control.Arrow
   (
@@ -18,13 +18,31 @@ import Control.Monad
   (
   join,
   )
-import Data.Maybe
+import qualified Database.Esqueleto as E
+import Database.Esqueleto
   (
-  fromMaybe,
+  (^.),
+  (&&.),
+  (<=.),
+  (>=.),
+  asc,
+  from,
+  isNothing,
+  orderBy,
+  val,
+  where_,
+  )
+import Data.Foldable
+  (
+  toList,
   )
 import Data.Functor
   (
   (<$>),
+  )
+import Data.Maybe
+  (
+  fromMaybe,
   )
 import Database.Persist
   (
@@ -35,7 +53,6 @@ import Database.Persist
   getBy,
   delete,
   insert,
-  repsert,
   update,
   )
 import Database.Persist.Sql
@@ -46,6 +63,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import Web.Scotty.Trans
   (
+  json,
   params,
   )
 
@@ -53,19 +71,26 @@ import Plailude
 import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
-  (=..),
   SqlPersistA,
+  (=..),
+  attributeSearch,
   clockParam,
+  getAttrs,
   liftAE,
   mkKey,
   runDatabase,
   )
+import Tempuhs.Server.DELETE
+  (
+  nowow,
+  )
 import Tempuhs.Server.Param
   (
-  maybeUnwrap,
-  paramE,
+  ParsableWrapper (parsableUnwrap),
   defaultParam,
   maybeParam,
+  maybeUnwrap,
+  paramE,
   rescueMissing,
   )
 import Tempuhs.Server.Spock
@@ -134,6 +159,42 @@ postTimespan pool = do
         mapM_ (insert . uncurry (TimespanAttribute tid)) as
         return tid
 
+timespans :: ConnectionPool -> ActionE ()
+-- | 'timespans' serves a basic request for a list of 'Timespan's with their
+-- associated 'TimespanAttribute's.
+timespans pool = do
+  p     <- maybeParam "parent"
+  b     <- maybeParam "begin"
+  e     <- maybeParam "end"
+  r     <- maybeParam "rubbish"
+  joins <- attributeSearch
+  let filters t =
+        (cmpMaybe (E.==.) (t ^. TimespanParent)  $ mkKey          <$> p) :
+        (cmpMaybe (>=.)   (t ^. TimespanRubbish) $ parsableUnwrap <$> r) :
+        [t ^. TimespanBeginMin <=. val x | x <- toList e]                ++
+        [t ^. TimespanEndMax   >=. val x | x <- toList b]
+  runDatabase pool $ do
+    c <- liftAE . rescueMissing =<< erretreat (clockParam "c")
+    let clockFilter t =
+          [t ^. TimespanClock E.==. val (entityKey d) | d <- toList c]
+    list <- E.select $
+      joinList joins $
+        E.from $ \t -> do
+          E.where_ $ foldl (&&.) (val True) (clockFilter t ++ filters t)
+          orderBy [asc $ t ^. TimespanId]
+          return t
+    liftAE . json =<< mapM (\a -> (,) a <$> getAttrs a) list
+  where joinList (e:es) t =
+          joinList es t >>= \t' -> from $ \b -> where_ (e t' b) >> return t'
+        joinList []     t = t
+        cmpMaybe f a b    = case b of
+                              Just _ -> f a $ val b
+                              _      -> isNothing a
+
+deleteTimespan :: ConnectionPool -> ActionE ()
+-- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
+deleteTimespan = nowow "timespan" TimespanRubbish
+
 postAttribute :: ConnectionPool -> ActionE ()
 -- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
 postAttribute p = do
@@ -141,19 +202,6 @@ postAttribute p = do
   key   <- paramE     "key"
   value <- maybeParam "value"
   runDatabase p $ updateAttribute (mkKey t) key value
-
-postClock :: ConnectionPool -> ActionE ()
--- | 'postClock' inserts a new 'Clock' into the database, or updates an
--- existing one, from a request.
-postClock p = do
-  c <- maybeParam "clock"
-  n <- paramE     "name"
-  runDatabase p $
-    let d = Clock n
-    in  liftAE . jsonKey =<< case c of
-      Just i  -> let k = mkKey i
-                 in  repsert k d >> return k
-      Nothing -> insert d
 
 updateAttribute :: Key Timespan -> T.Text -> Maybe T.Text -> SqlPersistA ()
 -- | 'updateAttribute' updates the 'TimespanAttribute' of a 'Timespan'. It
@@ -182,64 +230,3 @@ deleteAttribute a = do
     Just (Entity aid _) -> delete aid
     Nothing             -> return ()
   liftAE jsonSuccess
-
-postUser :: ConnectionPool -> ActionE ()
--- | 'postUser' inserts a new 'User' into the database, or replaces an
--- existing one, from a request.
-postUser p = do
-  u <- maybeParam "user"
-  n <- paramE    "name"
-  runDatabase p $
-    let v = User n Nothing
-    in  liftAE . jsonKey =<< case u of
-      Just i  -> let k = mkKey i
-                 in  repsert k v >> return k
-      Nothing -> insert v
-
-postRole :: ConnectionPool -> ActionE ()
--- | 'postRole' inserts a new 'Role' into the database, or updates an
--- existing one, from a request.
-postRole p = do
-  r <- maybeParam "role"
-  runDatabase p $
-    liftAE . jsonKey =<<
-      case r of
-        Just i -> do
-          let k = mkKey i
-          n  <- liftAE $ maybeParam "name"
-          ns <- liftAE $ maybeParam "namespace"
-          update (mkKey i) $ concat [RoleName      =.. n
-                                    ,RoleNamespace =.. (mkKey <$> ns)
-                                    ]
-          return k
-        Nothing -> do
-          n  <- liftAE $ paramE "name"
-          ns <- liftAE $ paramE "namespace"
-          return =<< insert $ Role n (mkKey ns) Nothing
-
-postPermissionsets :: ConnectionPool -> ActionE ()
--- | 'postPermissionsets' inserts a 'Permissionset' into the database, or
--- updates an existing one, from a request.
-postPermissionsets p = do
-  ps <- maybeParam "permissionset"
-  runDatabase p $
-    liftAE . jsonKey =<<
-      case ps of
-        Just i -> do
-          let k = mkKey i
-          o   <- liftAE $ maybeParam "own"
-          r   <- liftAE $ maybeParam "read"
-          w   <- liftAE $ maybeParam "write"
-          update (mkKey i) $ concat [PermissionsetOwn      =.. o
-                                    ,PermissionsetRead     =.. r
-                                    ,PermissionsetWrite    =.. w
-                                    ]
-          return k
-        Nothing -> do
-          tid <- liftAE $ paramE "timespan"
-          rid <- liftAE $ paramE "role"
-          o   <- liftAE $ paramE "own"
-          r   <- liftAE $ paramE "read"
-          w   <- liftAE $ paramE "write"
-          return =<< insert $ Permissionset (mkKey tid) (mkKey rid) o r w
-                                            Nothing
