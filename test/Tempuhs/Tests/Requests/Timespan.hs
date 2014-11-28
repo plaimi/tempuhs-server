@@ -2,15 +2,16 @@
 
 {- |
 Module      :  $Header$
-Description :  GET Specs for the tempuhs web server application.
+Description :  Timespan Specs for the tempuhs web server application.
 Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module GET (
-  getSpec,
+-} module Tempuhs.Tests.Requests.Timespan (
+  timespanSpec,
   ) where
 
+import qualified Data.ByteString as B
 import Control.Monad
   (
   (>=>),
@@ -19,84 +20,98 @@ import Control.Monad
   guard,
   join,
   )
-import qualified Data.ByteString as B
 import Data.List
   (
+  intercalate,
   subsequences,
   )
+import qualified Data.Set as Z
 import Test.Hspec
   (
   Spec,
   describe,
   )
 
-import Spoc
+import Tempuhs.Spoc
   (
   it,
+  itReturnsMissingParam,
   )
-import Spoc.Assert
+import Tempuhs.Spoc.Assert
   (
   assertJSONOK,
   )
-import Spoc.Default
+import Tempuhs.Spoc.Default
   (
+  attributes,
   specifieds,
   )
-import Spoc.Entity
+import Tempuhs.Spoc.Entity
   (
-  clockEntity,
-  defaultPermissionset,
-  defaultRole,
   defaultTimespans,
-  defaultUser,
+  modTimespanEntity,
   specialTimespan,
+  timespansAttrs,
+  timespanEntity,
+  timespansSpecs,
   timespansSpecsAttrs,
   )
-import Spoc.Init
+import Tempuhs.Spoc.Init
   (
   initAttribute,
   initClock,
   initDefaultTimespan,
-  initPermissionset,
-  initRole,
+  initModTimespan,
   initSubTimespan,
-  initUser,
+  initTimespanAttrs,
+  initTimespanSpecs,
   )
-import Spoc.Request
+import Tempuhs.Spoc.JSON
+  (
+  jsonKey,
+  jsonSuccess,
+  )
+import Tempuhs.Spoc.Request
   (
   buildQuery,
   get,
   getTimespans,
+  post,
+  )
+import Tempuhs.Tests.Requests.DELETE
+  (
+  rubbishSpec,
   )
 
+timespanSpec :: Spec
+-- | 'timespanSpec' runs the 'Timespan' 'Spec's.
+timespanSpec = do
+  postSpec
+  getSpec
+  deleteSpec
+  attributesSpec
+
+postSpec :: Spec
+postSpec =
+  describe "POST /timespans" $ do
+    forM_ (subsequences . Z.toList $ specifieds) $
+      \ss -> it ("inserts a timespan with key 1 specifying " ++
+                  intercalate "/" ss) $ do
+        initTimespanSpecs (Z.fromList ss)
+        getTimespans (10, 42) >>=
+          assertJSONOK (timespansSpecs (Z.fromList ss))
+    it "successfully inserts a sub-timespan"
+      initSubTimespan
+    it "successfully inserts a timespan with attributes" $ do
+      initTimespanAttrs attributes
+      getTimespans (10, 42) >>= assertJSONOK (timespansAttrs attributes)
+    it "modifies an existing timespan and its attributes" $ do
+      initModTimespan
+      getTimespans (10, 42) >>= assertJSONOK [modTimespanEntity]
+    itReturnsMissingParam $ post "/timespans" ""
+
 getSpec :: Spec
--- | 'getSpec' runs the GET 'Spec's.
-getSpec = do
-  clocksSpec
-  timespansSpec
-  usersSpec
-  rolesSpec
-  permissionsetsSpec
-
-clocksSpec :: Spec
-clocksSpec = do
-  describe "GET /clocks" $ do
-    it "initially returns []" $
-      get "/clocks" >>= assertJSONOK ()
-    it "returns clock after insertion" $ do
-      initClock
-      get "/clocks" >>= assertJSONOK [clockEntity 1 "TT"]
-    it "filters by name" $ do
-      initClock
-      get "/clocks?name=TT" >>= assertJSONOK [clockEntity 1 "TT"]
-      get "/clocks?name=NX" >>= assertJSONOK ()
-    it "filters by key" $ do
-      initClock
-      get "/clocks?id=1" >>= assertJSONOK [clockEntity 1 "TT"]
-      get "/clocks?id=2" >>= assertJSONOK ()
-
-timespansSpec :: Spec
-timespansSpec = do
+getSpec =
   describe "GET /timespans" $ do
     it "initially returns []" $
       get "/timespans" >>= assertJSONOK ()
@@ -173,49 +188,23 @@ timespansSpec = do
       forM_ (zip pos (repeat defaultTimespans) ++ zip neg (repeat [])) $
         \(a, b) -> get (qs a) >>= assertJSONOK b
 
-usersSpec :: Spec
-usersSpec = do
-  describe "GET /users" $ do
-    it "initially returns []" $
-      get "/users" >>= assertJSONOK ()
-    it "returns user after insertion" $ do
-      initUser
-      get "/users" >>= assertJSONOK [defaultUser]
-    it "filters by name" $ do
-      initUser
-      get "/users?name=Luser" >>= assertJSONOK [defaultUser]
-      get "/users?name=Ruser" >>= assertJSONOK ()
+deleteSpec :: Spec
+deleteSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
 
-rolesSpec :: Spec
-rolesSpec = do
-  describe "GET /roles" $ do
-    it "initially returns []" $
-      get "/roles" >>= assertJSONOK ()
-    it "returns role after insertion" $ do
-      initRole
-      get "/roles" >>= assertJSONOK [defaultRole]
-    it "filters by name" $ do
-      initRole
-      get "/roles?name=Rulle" >>= assertJSONOK [defaultRole]
-      get "/roles?name=Rolle" >>= assertJSONOK ()
-    it "filters by namespace" $ do
-      initRole
-      get "/roles?namespace=1" >>= assertJSONOK [defaultRole]
-      get "/roles?namespace=2" >>= assertJSONOK ()
-
-permissionsetsSpec :: Spec
-permissionsetsSpec = do
-  describe "GET /permissionsets" $ do
-    it "initially returns []" $
-      get "/permissionsets" >>= assertJSONOK ()
-    it "returns a permissionset set after insertion" $ do
-      initPermissionset
-      get "/permissionsets" >>= assertJSONOK [defaultPermissionset]
-    it "filters by timespan" $ do
-      initPermissionset
-      get "/permissionsets?timespan=1" >>= assertJSONOK [defaultPermissionset]
-      get "/permissionsets?timespan=2" >>= assertJSONOK ()
-    it "filters by role" $ do
-      initPermissionset
-      get "/permissionsets?role=1" >>= assertJSONOK [defaultPermissionset]
-      get "/permissionsets?role=2" >>= assertJSONOK ()
+attributesSpec :: Spec
+attributesSpec =
+  describe "POST /attributes" $ do
+    it "inserts a timespan attribute with key 1"
+      initAttribute
+    it "modifies an existing timespan attribute" $ do
+      initAttribute
+      post "/attributes" "timespan=1&key=title&value=new" >>=
+        assertJSONOK (jsonKey 1)
+      getTimespans (10, 42) >>=
+        assertJSONOK (timespansSpecsAttrs specifieds [("title", "new")])
+    it "deletes an existing timespan attribute" $ do
+      initAttribute
+      post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
+      getTimespans (10, 42) >>=
+        assertJSONOK [(timespanEntity specifieds, [] :: [()])]
+    itReturnsMissingParam $ post "/attributes" ""

@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.JSON where
+-} module Tempuhs.Spoc.JSON where
 
 import Data.Aeson
   (

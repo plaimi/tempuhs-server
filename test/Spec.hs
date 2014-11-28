@@ -15,22 +15,35 @@ import Test.Hspec
   hspec,
   )
 
-import DELETE
+import Tempuhs.Tests.Requests.Clock
   (
-  deleteSpec,
+  clockSpec,
   )
-import GET
+import Tempuhs.Tests.Requests.Permissionset
   (
-  getSpec,
+  permissionsetSpec,
   )
-import POST
+import Tempuhs.Tests.Requests.Role
   (
-  postSpec,
+  roleSpec,
+  )
+import Tempuhs.Tests.Requests.Timespan
+  (
+  timespanSpec,
+  )
+import Tempuhs.Tests.Requests.User
+  (
+  userSpec,
   )
 
 spec :: Spec
 -- | 'spec' runs all the 'Spec's for the tempuhs web server application.
-spec = postSpec >> getSpec >> deleteSpec
+spec = do
+  timespanSpec
+  clockSpec
+  roleSpec
+  userSpec
+  permissionsetSpec
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.

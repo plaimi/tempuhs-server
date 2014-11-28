@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Request where
+-} module Tempuhs.Spoc.Request where
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L

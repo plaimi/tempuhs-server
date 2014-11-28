@@ -59,17 +59,20 @@ executable tempuhs-server
 test-suite spec
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
-  other-modules:       DELETE
-                       GET
-                       POST
-                       Spoc
-                       Spoc.Assert
-                       Spoc.Default
-                       Spoc.Entity
-                       Spoc.Init
-                       Spoc.JSON
-                       Spoc.Request
-                       Spoc.Type
+  other-modules:       Tempuhs.Spoc
+                       Tempuhs.Spoc.Assert
+                       Tempuhs.Spoc.Default
+                       Tempuhs.Spoc.Entity
+                       Tempuhs.Spoc.Init
+                       Tempuhs.Spoc.JSON
+                       Tempuhs.Spoc.Request
+                       Tempuhs.Spoc.Type
+                       Tempuhs.Tests.Requests.DELETE
+                       Tempuhs.Tests.Requests.Clock
+                       Tempuhs.Tests.Requests.Permissionset
+                       Tempuhs.Tests.Requests.Role
+                       Tempuhs.Tests.Requests.Timespan
+                       Tempuhs.Tests.Requests.User
   other-extensions:    FlexibleContexts
                        FlexibleInstances
                        GeneralizedNewtypeDeriving

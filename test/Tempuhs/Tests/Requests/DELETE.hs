@@ -8,8 +8,8 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module DELETE (
-  deleteSpec,
+-} module Tempuhs.Tests.Requests.DELETE (
+  rubbishSpec,
   ) where
 
 import Data.Aeson
@@ -35,37 +35,26 @@ import Test.Hspec
   describe,
   )
 
-import Spoc
+import Tempuhs.Spoc
   (
   it,
   )
-import Spoc.Assert
+import Tempuhs.Spoc.Assert
   (
   assertJSON,
   assertJSONOK,
   assertStatus,
   )
-import Spoc.Entity
+import Tempuhs.Spoc.Entity
   (
   (=^=),
-  defaultPermissionset,
-  defaultRole,
-  defaultTimespans,
-  defaultUser,
   )
-import Spoc.Init
-  (
-  initDefaultTimespan,
-  initPermissionset,
-  initRole,
-  initUser,
-  )
-import Spoc.JSON
+import Tempuhs.Spoc.JSON
   (
   jsonSuccess,
   showJSON,
   )
-import Spoc.Request
+import Tempuhs.Spoc.Request
   (
   delete,
   get,
@@ -73,37 +62,16 @@ import Spoc.Request
 
 import Tempuhs.Chronology
 
-deleteSpec :: Spec
--- | 'deleteSpec' runs the DELETE 'Spec's.
-deleteSpec = do
-  timespansSpec
-  rolesSpec
-  usersSpec
-  permissionsetsSpec
-
 rubbishSpec :: (HasRubbish d (Maybe UTCTime), FromJSON d, ToJSON d)
             => String -> Session () -> [d] -> Spec
-rubbishSpec f i d = do
+rubbishSpec f i d =
   describe ("DELETE /" ++ f ++ "s") $ do
     it ("rubbishes a " ++ f) initDelete
     it ("returns the rubbished " ++ f) $ do
       initDelete
       get (pack $ "/" ++ f ++ "s?rubbish=2000-01-01") >>= \r -> do
         assertStatus 200 r
-        assertJSON ("a rubbished version of: " ++ showJSON d) r ((=^=) d)
+        assertJSON ("a rubbished version of: " ++ showJSON d) r (d =^=)
   where
     initDelete = i >> delete (pack $ "/" ++ f ++ "s?" ++ f ++ "=1")
                    >>= assertJSONOK jsonSuccess
-
-timespansSpec :: Spec
-timespansSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
-
-rolesSpec :: Spec
-rolesSpec = rubbishSpec "role" initRole [defaultRole]
-
-usersSpec :: Spec
-usersSpec =  rubbishSpec "user" initUser [defaultUser]
-
-permissionsetsSpec :: Spec
-permissionsetsSpec = rubbishSpec "permissionset" initPermissionset
-                                                 [defaultPermissionset]

@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Init where
+-} module Tempuhs.Spoc.Init where
 
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Set as Z
@@ -16,25 +16,25 @@ import Network.Wai.Test
   Session,
   )
 
-import Spoc.Assert
+import Tempuhs.Spoc.Assert
   (
   assertJSONOK,
   )
-import Spoc.Default
+import Tempuhs.Spoc.Default
   (
   attributes,
   specifieds,
   )
-import Spoc.JSON
+import Tempuhs.Spoc.JSON
   (
   jsonKey,
   )
-import Spoc.Request
+import Tempuhs.Spoc.Request
   (
   buildQueryL,
   post,
   )
-import Spoc.Type
+import Tempuhs.Spoc.Type
   (
   AttributePair,
   Specified,

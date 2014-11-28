@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Assert where
+-} module Tempuhs.Spoc.Assert where
 
 import Control.Monad
   (
@@ -54,7 +54,7 @@ import Network.Wai.Test
 import qualified Test.HUnit as HU (assertBool)
 
 import Plailude
-import Spoc.JSON
+import Tempuhs.Spoc.JSON
   (
   showJSON,
   )

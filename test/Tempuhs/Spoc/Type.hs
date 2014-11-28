@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Type where
+-} module Tempuhs.Spoc.Type where
 
 import Data.String
   (

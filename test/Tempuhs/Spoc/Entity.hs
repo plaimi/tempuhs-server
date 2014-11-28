@@ -11,7 +11,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Entity where
+-} module Tempuhs.Spoc.Entity where
 
 import Control.Arrow
   (
@@ -53,20 +53,20 @@ import qualified Data.Set as Z
 import qualified Data.Text as T
 
 import Plailude
-import Spoc.Default
-  (
-  attributes,
-  specifieds,
-  )
-import Spoc.Type
-  (
-  AttributePair,
-  Specified,
-  )
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
   mkKey,
+  )
+import Tempuhs.Spoc.Default
+  (
+  attributes,
+  specifieds,
+  )
+import Tempuhs.Spoc.Type
+  (
+  AttributePair,
+  Specified,
   )
 
 instance HasRubbish a (Maybe UTCTime)

@@ -7,11 +7,11 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc.Default where
+-} module Tempuhs.Spoc.Default where
 
 import qualified Data.Set as Z
 
-import Spoc.Type
+import Tempuhs.Spoc.Type
   (
   AttributePair,
   Specified,

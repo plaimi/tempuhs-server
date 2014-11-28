@@ -7,7 +7,7 @@ Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
--} module Spoc where
+-} module Tempuhs.Spoc where
 
 import Control.Monad.Logger
   (
@@ -49,7 +49,7 @@ import Tempuhs.Server.Spock
   (
   scottyAppE,
   )
-import Spoc.Assert
+import Tempuhs.Spoc.Assert
   (
   assertJSONError,
   )
