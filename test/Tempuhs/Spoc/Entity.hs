@@ -90,7 +90,7 @@ _  =^= _  = False
 clockEntity :: Integer -> T.Text -> Entity Clock
 -- | 'clockEntity' is a convenience function for constructing an 'Entity'
 -- containing a 'Clock'.
-clockEntity k = Entity (mkKey k) . Clock
+clockEntity k = Entity (mkKey k) . flip Clock Nothing
 
 roleEntity :: Integer -> T.Text -> Integer -> Entity Role
 -- | 'roleEntity' is a convenience function for constructing an 'Entity'
@@ -178,7 +178,7 @@ mkAttributeEntities as =
 
 defaultClock :: Entity Clock
 -- | 'defaultClock' is a helper value for the often used 'Init.initClock'.
-defaultClock = Entity (mkKey 1) $ Clock "TT"
+defaultClock = Entity (mkKey 1) $ Clock "TT" Nothing
 
 defaultUser :: Entity User
 -- | 'defaultUser' is a helper value for the often used

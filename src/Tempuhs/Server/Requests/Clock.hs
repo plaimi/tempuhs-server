@@ -64,7 +64,7 @@ postClock p = do
   c <- maybeParam "clock"
   n <- paramE     "name"
   runDatabase p $
-    let d = Clock n
+    let d = Clock n Nothing
     in  liftAE . jsonKey =<< case c of
       Just i  -> let k = mkKey i
                  in  repsert k d >> return k
