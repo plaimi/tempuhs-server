@@ -9,6 +9,10 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Role where
 
+import Control.Monad
+  (
+  void,
+  )
 import Data.Foldable
   (
   toList,
@@ -19,6 +23,7 @@ import Data.Functor
   )
 import Database.Persist
   (
+  Key,
   SelectOpt (Asc),
   (==.),
   insert,
@@ -45,6 +50,7 @@ import Tempuhs.Server.Database
 import Tempuhs.Server.DELETE
   (
   nowow,
+  owow,
   )
 import Tempuhs.Server.Param
   (
@@ -92,3 +98,7 @@ roles p = do
 deleteRole :: ConnectionPool -> ActionE ()
 -- | 'deleteRole' updates the rubbish field of an existing 'Role'.
 deleteRole = nowow "role" RoleRubbish
+
+unsafeDeleteRole :: ConnectionPool -> ActionE ()
+-- | 'unsafeDeleteRole' hard-deletes a 'Role' from the database.
+unsafeDeleteRole p = void $ (owow "role" p :: ActionE (Maybe (Key Role)))

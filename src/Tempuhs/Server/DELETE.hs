@@ -31,12 +31,14 @@ import Data.Time.Clock
 import Database.Persist
   (
   (=.),
+  delete,
   get,
   update,
   )
 import Database.Persist.Class
   (
   EntityField,
+  Key,
   PersistEntity,
   PersistEntityBackend,
   )
@@ -79,3 +81,17 @@ nowow p f c =
       case mr of
         Just _  -> return <$> (update k [f =. Just now] >> liftAE jsonSuccess)
         Nothing -> return Nothing
+
+owow :: (PersistEntity a, PersistEntityBackend a ~ SqlBackend)
+     => Text -> ConnectionPool -> ActionE (Maybe (Key a))
+-- | 'owow' takes a parametre to look up. If the row exists, it inflicts owow
+-- in the form of *hard deleting* the row. If it doesn't exist, an error on
+-- the parametre is raised per 'withParam'.
+owow p c =
+  withParam p $ \r -> runDatabase c $ do
+    let k = mkKey r
+    mr <- get k
+    case mr of
+      Just _  -> return <$> (delete k >> liftAE jsonSuccess >>
+                             return (Just k))
+      Nothing -> return Nothing

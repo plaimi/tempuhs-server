@@ -9,12 +9,17 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Permissionset where
 
+import Control.Monad
+  (
+  void,
+  )
 import Data.Foldable
   (
   toList,
   )
 import Database.Persist
   (
+  Key,
   SelectOpt (Asc),
   (==.),
   insert,
@@ -41,6 +46,7 @@ import Tempuhs.Server.Database
 import Tempuhs.Server.DELETE
   (
   nowow,
+  owow,
   )
 import Tempuhs.Server.Param
   (
@@ -95,3 +101,9 @@ deletePermissionset :: ConnectionPool -> ActionE ()
 -- | 'deletePermissionset' updates the rubbish field of an existing
 -- 'Permissionset'.
 deletePermissionset = nowow "permissionset" PermissionsetRubbish
+
+unsafeDeletePermissionset :: ConnectionPool -> ActionE ()
+-- | 'unsafeDeletePermissionset' hard-deletes a 'Permissionset' from the
+-- database.
+unsafeDeletePermissionset p =
+  void $ (owow "permissionset" p :: ActionE (Maybe (Key Permissionset)))

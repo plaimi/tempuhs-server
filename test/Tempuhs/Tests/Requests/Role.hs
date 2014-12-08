@@ -49,6 +49,7 @@ import Tempuhs.Spoc.Request
 import Tempuhs.Tests.Requests.DELETE
   (
   rubbishSpec,
+  unsafeRubbishSpec,
   )
 
 roleSpec :: Spec
@@ -57,6 +58,7 @@ roleSpec = do
   postSpec
   getSpec
   deleteSpec
+  purgeSpec
 
 postSpec :: Spec
 postSpec =
@@ -94,3 +96,6 @@ getSpec =
 
 deleteSpec :: Spec
 deleteSpec = rubbishSpec "role" initRole [defaultRole]
+
+purgeSpec :: Spec
+purgeSpec = unsafeRubbishSpec "role" initRole

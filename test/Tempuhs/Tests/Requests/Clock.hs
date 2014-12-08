@@ -29,7 +29,7 @@ import Tempuhs.Spoc.Assert
   )
 import Tempuhs.Spoc.Entity
   (
-  clockEntity,
+  defaultClock,
   )
 import Tempuhs.Spoc.Init
   (
@@ -44,12 +44,17 @@ import Tempuhs.Spoc.Request
   get,
   post,
   )
+import Tempuhs.Tests.Requests.DELETE
+  (
+  unsafeRubbishSpec,
+  )
 
 clockSpec :: Spec
 -- | 'clockSpec' runs the 'Clock' 'Spec's.
 clockSpec = do
   postSpec
   getSpec
+  purgeSpec
 
 postSpec :: Spec
 postSpec =
@@ -72,12 +77,15 @@ getSpec =
       get "/clocks" >>= assertJSONOK ()
     it "returns clock after insertion" $ do
       initClock
-      get "/clocks" >>= assertJSONOK [clockEntity 1 "TT"]
+      get "/clocks" >>= assertJSONOK [defaultClock]
     it "filters by name" $ do
       initClock
-      get "/clocks?name=TT" >>= assertJSONOK [clockEntity 1 "TT"]
+      get "/clocks?name=TT" >>= assertJSONOK [defaultClock]
       get "/clocks?name=NX" >>= assertJSONOK ()
     it "filters by key" $ do
       initClock
-      get "/clocks?id=1" >>= assertJSONOK [clockEntity 1 "TT"]
+      get "/clocks?id=1" >>= assertJSONOK [defaultClock]
       get "/clocks?id=2" >>= assertJSONOK ()
+
+purgeSpec :: Spec
+purgeSpec = unsafeRubbishSpec "clock" initClock

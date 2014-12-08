@@ -25,18 +25,21 @@ import Tempuhs.Server.Requests.Clock
   (
   clocks,
   postClock,
+  unsafeDeleteClock,
   )
 import Tempuhs.Server.Requests.Permissionset
   (
   permissionsets,
   deletePermissionset,
   postPermissionset,
+  unsafeDeletePermissionset,
   )
 import Tempuhs.Server.Requests.Role
   (
   roles,
   deleteRole,
   postRole,
+  unsafeDeleteRole,
   )
 import Tempuhs.Server.Requests.Timespan
   (
@@ -44,12 +47,14 @@ import Tempuhs.Server.Requests.Timespan
   postAttribute,
   postTimespan,
   timespans,
+  unsafeDeleteTimespan,
   )
 import Tempuhs.Server.Requests.User
   (
   users,
   deleteUser,
   postUser,
+  unsafeDeleteUser,
   )
 import Tempuhs.Server.Spock
   (
@@ -59,30 +64,35 @@ import Tempuhs.Server.Spock
 
 clockRequests :: ConnectionPool -> ScottyE ()
 clockRequests p = do
-  get  "/clocks" $ clocks    p
-  post "/clocks" $ postClock p
+  get  "/clocks"         $ clocks            p
+  post "/clocks"         $ postClock         p
+  delete "/clocks/purge" $ unsafeDeleteClock p
 
 permissionsetRequests :: ConnectionPool -> ScottyE ()
 permissionsetRequests p = do
-  post   "/permissionsets" $ postPermissionset   p
-  get    "/permissionsets" $ permissionsets      p
-  delete "/permissionsets" $ deletePermissionset p
+  post   "/permissionsets"       $ postPermissionset         p
+  get    "/permissionsets"       $ permissionsets            p
+  delete "/permissionsets"       $ deletePermissionset       p
+  delete "/permissionsets/purge" $ unsafeDeletePermissionset p
 
 roleRequests :: ConnectionPool -> ScottyE ()
 roleRequests p = do
-  post   "/roles" $ postRole   p
-  get    "/roles" $ roles      p
-  delete "/roles" $ deleteRole p
+  post   "/roles"       $ postRole         p
+  get    "/roles"       $ roles            p
+  delete "/roles"       $ deleteRole       p
+  delete "/roles/purge" $ unsafeDeleteRole p
 
 timespanRequests :: ConnectionPool -> ScottyE ()
 timespanRequests p = do
-  post   "/timespans"  $ postTimespan   p
-  get    "/timespans"  $ timespans      p
-  delete "/timespans"  $ deleteTimespan p
-  post   "/attributes" $ postAttribute  p
+  post   "/timespans"        $ postTimespan         p
+  get    "/timespans"        $ timespans            p
+  delete "/timespans"        $ deleteTimespan       p
+  delete "/timespans/purge"  $ unsafeDeleteTimespan p
+  post   "/attributes"       $ postAttribute        p
 
 userRequests :: ConnectionPool -> ScottyE ()
 userRequests p = do
-  post   "/users" $ postUser   p
-  get    "/users" $ users      p
-  delete "/users" $ deleteUser p
+  post   "/users"       $ postUser         p
+  get    "/users"       $ users            p
+  delete "/users"       $ deleteUser       p
+  delete "/users/purge" $ unsafeDeleteUser p

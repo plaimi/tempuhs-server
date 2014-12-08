@@ -9,12 +9,17 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Clock where
 
+import Control.Monad
+  (
+  void,
+  )
 import Data.Foldable
   (
   toList,
   )
 import Database.Persist
   (
+  Key,
   SelectOpt (Asc),
   (==.),
   insert,
@@ -36,6 +41,10 @@ import Tempuhs.Server.Database
   liftAE,
   mkKey,
   runDatabase,
+  )
+import Tempuhs.Server.DELETE
+  (
+  owow,
   )
 import Tempuhs.Server.Param
   (
@@ -69,3 +78,7 @@ clocks p = do
   let filters = [ClockName ==. cn       | cn <- toList n] ++
                 [ClockId   ==. mkKey ci | ci <- toList i]
   runDatabase p $ liftAE . json =<< selectList filters [Asc ClockId]
+
+unsafeDeleteClock :: ConnectionPool -> ActionE ()
+-- | 'unsafeDeleteClock' hard-deletes a 'Clock' from the database.
+unsafeDeleteClock p = void $ (owow "clock" p :: ActionE (Maybe (Key Clock)))

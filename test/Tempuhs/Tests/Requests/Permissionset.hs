@@ -48,6 +48,7 @@ import Tempuhs.Spoc.Request
 import Tempuhs.Tests.Requests.DELETE
   (
   rubbishSpec,
+  unsafeRubbishSpec,
   )
 
 permissionsetSpec :: Spec
@@ -56,6 +57,7 @@ permissionsetSpec = do
   postSpec
   getSpec
   deleteSpec
+  purgeSpec
 
 postSpec :: Spec
 postSpec =
@@ -95,3 +97,6 @@ getSpec =
 deleteSpec :: Spec
 deleteSpec = rubbishSpec "permissionset" initPermissionset
                                          [defaultPermissionset]
+
+purgeSpec :: Spec
+purgeSpec = unsafeRubbishSpec "permissionset" initPermissionset

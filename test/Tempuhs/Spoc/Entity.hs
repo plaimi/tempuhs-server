@@ -176,6 +176,10 @@ mkAttributeEntities as =
   [ attributeEntity i 1 k v
   | (i, (k, v)) <- [1 .. ] `zip` map (toText *** toText) as ]
 
+defaultClock :: Entity Clock
+-- | 'defaultClock' is a helper value for the often used 'Init.initClock'.
+defaultClock = Entity (mkKey 1) $ Clock "TT"
+
 defaultUser :: Entity User
 -- | 'defaultUser' is a helper value for the often used
 -- 'Init.initUser'.

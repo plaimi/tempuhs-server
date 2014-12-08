@@ -9,12 +9,17 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.User where
 
+import Control.Monad
+  (
+  void,
+  )
 import Data.Foldable
   (
   toList,
   )
 import Database.Persist
   (
+  Key,
   SelectOpt (Asc),
   (==.),
   insert,
@@ -40,6 +45,7 @@ import Tempuhs.Server.Database
 import Tempuhs.Server.DELETE
   (
   nowow,
+  owow,
   )
 import Tempuhs.Server.Param
   (
@@ -77,3 +83,7 @@ users p = do
 deleteUser :: ConnectionPool -> ActionE ()
 -- | 'deleteUser' updates the rubbish field of an existing 'User'.
 deleteUser = nowow "user" UserRubbish
+
+unsafeDeleteUser :: ConnectionPool -> ActionE ()
+-- | 'unsafeDeleteUser' hard-deletes a 'User' from the database.
+unsafeDeleteUser p = void $ (owow "user" p :: ActionE (Maybe (Key User)))

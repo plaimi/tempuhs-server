@@ -81,6 +81,7 @@ import Tempuhs.Spoc.Request
 import Tempuhs.Tests.Requests.DELETE
   (
   rubbishSpec,
+  unsafeRubbishSpec,
   )
 
 timespanSpec :: Spec
@@ -89,6 +90,7 @@ timespanSpec = do
   postSpec
   getSpec
   deleteSpec
+  purgeSpec
   attributesSpec
 
 postSpec :: Spec
@@ -190,6 +192,9 @@ getSpec =
 
 deleteSpec :: Spec
 deleteSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
+
+purgeSpec :: Spec
+purgeSpec = unsafeRubbishSpec "timespan" initDefaultTimespan
 
 attributesSpec :: Spec
 attributesSpec =

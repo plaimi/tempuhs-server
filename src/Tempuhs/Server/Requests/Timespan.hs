@@ -17,6 +17,7 @@ import Control.Arrow
 import Control.Monad
   (
   join,
+  void,
   )
 import qualified Database.Esqueleto as E
 import Database.Esqueleto
@@ -83,6 +84,7 @@ import Tempuhs.Server.Database
 import Tempuhs.Server.DELETE
   (
   nowow,
+  owow,
   )
 import Tempuhs.Server.Param
   (
@@ -230,3 +232,8 @@ deleteAttribute a = do
     Just (Entity aid _) -> delete aid
     Nothing             -> return ()
   liftAE jsonSuccess
+
+unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
+-- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
+unsafeDeleteTimespan p =
+  void $ (owow "timespan" p :: ActionE (Maybe (Key Timespan)))

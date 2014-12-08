@@ -10,6 +10,7 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Tests.Requests.DELETE (
   rubbishSpec,
+  unsafeRubbishSpec,
   ) where
 
 import Data.Aeson
@@ -75,3 +76,13 @@ rubbishSpec f i d =
   where
     initDelete = i >> delete (pack $ "/" ++ f ++ "s?" ++ f ++ "=1")
                    >>= assertJSONOK jsonSuccess
+
+unsafeRubbishSpec :: String -> Session () -> Spec
+unsafeRubbishSpec f i =
+  describe ("DELETE /" ++ f ++ "s/purge") $ do
+    it ("purges a " ++ f) initDelete
+    it "returns []" $ get (pack $ f ++ "s") >>= assertJSONOK ()
+  where
+    initDelete = i >>
+                 delete (pack $ "/" ++ f ++ "s/purge?"
+                                    ++ f ++ "=1") >>= assertJSONOK jsonSuccess
