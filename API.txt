@@ -23,6 +23,7 @@ If you additionally want seconds precision, add a 'T', followed by hh-mm-ss.
 Although it is possible to specify begin and end without specifying the clock,
 this is generally meaningless.
 
+  id: integer, opitonal -- ID of the timespan
   parent: integer, optional -- ID of the parent timespan (returns top-level
                             -- timespans if not given)
   clock: string, optional -- the name of an existing clock
@@ -30,6 +31,10 @@ this is generally meaningless.
   end: float, optional -- end of time period as read by the clock
   rubbish: timestamp, optional -- timestamp string for the earliest timespan
                                -- to retrieve
+  descendants: non-negative integer or "Infinity", optional -- levels of
+                                                            -- descendants
+                                                            -- of the timespan
+                                                            -- (defaults to 0)
   *_: string -- filter on exact attribute value (can be give multiple times)
   *_like: string -- filter on part of attribute value using SQL LIKE (can be
                  -- given multiple times)
@@ -47,6 +52,12 @@ Get all top-level timespans rubbished since April Fool's, 2015:
 
 Get all top-level timespans rubbished since 02:34 at April Fool's, 2015:
   /timespans?rubbish=2015-04-01T02-34-00
+
+Get timespan 42 and all of its descendants:
+  /timespans?id=42&descendants=Infinity
+
+Get timespan 42 and 2 levels of descendants:
+  /timespans?id=42&descendants=2
 
 Get all top-level timespans having a "Title" attribute with value "Xonotic":
   /timespans?Title_=Xonotic

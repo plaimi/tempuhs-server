@@ -162,11 +162,11 @@ defaultTimespans :: [(Entity Timespan, [Entity TimespanAttribute])]
 -- 'Init.initDefaultTimespan'.
 defaultTimespans = timespansSpecsAttrs specifieds attributes
 
-specialTimespan :: Maybe Integer -> Entity Timespan
+specialTimespan :: Integer -> Maybe Integer -> Entity Timespan
 -- | 'specialTimespan' is a convenience 'Timespan' that's easy to distinguish
--- from 'defaultTimespans'.
-specialTimespan p =
-  Entity (mkKey 2) $
+-- from 'defaultTimespans'. It takes the Key ID and a 'Maybe' Parent ID.
+specialTimespan n p =
+  Entity (mkKey n) $
          Timespan (mkKey <$> p) (mkKey 1) (-10) (-9) (-10) (-9) 1 Nothing
 
 mkAttributeEntities :: [AttributePair] -> [Entity TimespanAttribute]

@@ -102,8 +102,9 @@ postSpec =
         initTimespanSpecs (Z.fromList ss)
         getTimespans (10, 42) >>=
           assertJSONOK (timespansSpecs (Z.fromList ss))
-    it "successfully inserts a sub-timespan"
-      initSubTimespan
+    it "successfully inserts a sub-timespan" $ do
+      initDefaultTimespan
+      initSubTimespan 2 1
     it "successfully inserts a timespan with attributes" $ do
       initTimespanAttrs attributes
       getTimespans (10, 42) >>= assertJSONOK (timespansAttrs attributes)
@@ -146,12 +147,26 @@ getSpec =
       getTimespans (10, 42) >>=
         assertJSONOK (timespansSpecsAttrs specifieds [("title", "test")])
     it "filters on parent" $ do
-      initSubTimespan
+      initDefaultTimespan
+      initSubTimespan 2 1
       get "/timespans?parent=1" >>=
-        assertJSONOK [(specialTimespan (Just 1), [] :: [()])]
+        assertJSONOK [(specialTimespan 2 (Just 1), [] :: [()])]
     it "returns [] asking for rubbish after inserting useful timespans" $ do
       initDefaultTimespan
       get "/timespans?rubbish=2000-01-01" >>= assertJSONOK ()
+    it "returns a timespan and all of its descendants" $ do
+      initDefaultTimespan
+      initSubTimespan 2 1
+      initSubTimespan 3 2
+      get "/timespans?id=1&descendants=Infinity" >>=
+        assertJSONOK (defaultTimespans ++ (specialTimespan 2 (Just 1), []) :
+                                          [(specialTimespan 3 (Just 2), [])])
+    it "returns a timespan and 1 level of descendants" $ do
+      initDefaultTimespan
+      initSubTimespan 2 1
+      initSubTimespan 3 2
+      get "/timespans?id=1&descendants=1" >>=
+        assertJSONOK (defaultTimespans ++ [(specialTimespan 2 (Just 1), [])])
     it "filters on attributes" $ do
       initDefaultTimespan
       let qs :: String -> String -> B.ByteString

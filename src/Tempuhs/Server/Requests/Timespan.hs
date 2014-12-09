@@ -24,18 +24,9 @@ import Database.Esqueleto
   (
   (^.),
   (&&.),
-  (<=.),
-  (>=.),
   asc,
-  from,
-  isNothing,
   orderBy,
   val,
-  where_,
-  )
-import Data.Foldable
-  (
-  toList,
   )
 import Data.Functor
   (
@@ -48,7 +39,7 @@ import Data.Maybe
 import Database.Persist
   (
   Entity (Entity),
-  Key,
+  Key (Key),
   (=.),
   entityKey,
   getBy,
@@ -88,12 +79,19 @@ import Tempuhs.Server.DELETE
   )
 import Tempuhs.Server.Param
   (
-  ParsableWrapper (parsableUnwrap),
   defaultParam,
   maybeParam,
   maybeUnwrap,
   paramE,
   rescueMissing,
+  )
+import Tempuhs.Server.Requests.Timespan.Util
+  (
+  clockFilter,
+  descendantLookup,
+  filters,
+  idFilter,
+  joinList,
   )
 import Tempuhs.Server.Spock
   (
@@ -165,33 +163,25 @@ timespans :: ConnectionPool -> ActionE ()
 -- | 'timespans' serves a basic request for a list of 'Timespan's with their
 -- associated 'TimespanAttribute's.
 timespans pool = do
-  p     <- maybeParam "parent"
-  b     <- maybeParam "begin"
-  e     <- maybeParam "end"
-  r     <- maybeParam "rubbish"
+  tid   <- maybeParam     "id"
+  p     <- maybeParam     "parent"
+  b     <- maybeParam     "begin"
+  e     <- maybeParam     "end"
+  r     <- maybeParam     "rubbish"
+  ds    <- defaultParam 0 "descendants"
   joins <- attributeSearch
-  let filters t =
-        (cmpMaybe (E.==.) (t ^. TimespanParent)  $ mkKey          <$> p) :
-        (cmpMaybe (>=.)   (t ^. TimespanRubbish) $ parsableUnwrap <$> r) :
-        [t ^. TimespanBeginMin <=. val x | x <- toList e]                ++
-        [t ^. TimespanEndMax   >=. val x | x <- toList b]
   runDatabase pool $ do
     c <- liftAE . rescueMissing =<< erretreat (clockParam "c")
-    let clockFilter t =
-          [t ^. TimespanClock E.==. val (entityKey d) | d <- toList c]
     list <- E.select $
       joinList joins $
         E.from $ \t -> do
-          E.where_ $ foldl (&&.) (val True) (clockFilter t ++ filters t)
+          E.where_ $ foldl (&&.) (val True) (clockFilter t c   ++
+                                             filters t p r e b ++
+                                             idFilter t (mkKey <$> tid))
           orderBy [asc $ t ^. TimespanId]
           return t
-    liftAE . json =<< mapM (\a -> (,) a <$> getAttrs a) list
-  where joinList (e:es) t =
-          joinList es t >>= \t' -> from $ \b -> where_ (e t' b) >> return t'
-        joinList []     t = t
-        cmpMaybe f a b    = case b of
-                              Just _ -> f a $ val b
-                              _      -> isNothing a
+    descs <- descendantLookup (ceiling (ds :: Double)) (entityKey <$> list)
+    liftAE . json =<< mapM (\a -> (,) a <$> getAttrs a) (list ++ descs)
 
 deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.

@@ -23,10 +23,13 @@ library
                        Tempuhs.Server.Requests.Permissionset
                        Tempuhs.Server.Requests.Role
                        Tempuhs.Server.Requests.Timespan
+                       Tempuhs.Server.Requests.Timespan.Util
                        Tempuhs.Server.Requests.User
                        Tempuhs.Server.Spock
   other-extensions:    FlexibleContexts
+                       KindSignatures
                        OverloadedStrings
+                       RankNTypes
   build-depends:       aeson >=0.7 && <0.9,
                        base >=4.6 && <4.8,
                        bytestring >=0.10 && <0.11,

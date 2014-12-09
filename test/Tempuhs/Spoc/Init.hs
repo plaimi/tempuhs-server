@@ -16,6 +16,7 @@ import Network.Wai.Test
   Session,
   )
 
+import Plailude
 import Tempuhs.Spoc.Assert
   (
   assertJSONOK,
@@ -82,15 +83,12 @@ initModTimespan =
   where
     body = L.append "timespan=1&beginMin=0.0&" $ buildQueryL attributes
 
-initSubTimespan :: Session ()
--- | 'initSubTimespan' does 'initDefaultTimespan', then inserts another
--- timespan with the first timespan as parent and checks the response.
-initSubTimespan =
-  initDefaultTimespan >>
-    post "/timespans" body >>= assertJSONOK (jsonKey 2)
-  where
-    body =
-      "parent=1&clock=TT&beginMin=-10.0"
+initSubTimespan :: Integer -> Integer -> Session ()
+-- | 'initSubTimespan' inserts a timespan with the passed in Key as its Key,
+-- and the passed in Timespan ID as its parent.
+initSubTimespan n m = post "/timespans" body >>= assertJSONOK (jsonKey n)
+  where body =
+          "parent=" `L.append` showL8 m `L.append` "&clock=TT&beginMin=-10.0"
 
 initAttribute :: Session ()
 -- | 'initAttribute' does 'initTimespanSpecs', then inserts a timespan
