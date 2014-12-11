@@ -30,14 +30,18 @@ import Tempuhs.Spoc.Assert
 import Tempuhs.Spoc.Entity
   (
   defaultUser,
+  defaultUserWithAttrs,
+  modUserAttr,
   )
 import Tempuhs.Spoc.Init
   (
   initUser,
+  initUserAttribute,
   )
 import Tempuhs.Spoc.JSON
   (
   jsonKey,
+  jsonSuccess,
   )
 import Tempuhs.Spoc.Request
   (
@@ -61,6 +65,7 @@ userSpec = do
   deleteSpec
   purgeSpec
   patchSpec
+  attributesSpec
 
 getSpec :: Spec
 getSpec =
@@ -69,11 +74,14 @@ getSpec =
       get "/users" >>= assertJSONOK ()
     it "returns user after insertion" $ do
       initUser
-      get "/users" >>= assertJSONOK [defaultUser]
+      get "/users" >>= assertJSONOK [(defaultUser, [] :: [()])]
     it "filters by name" $ do
       initUser
-      get "/users?name=Luser" >>= assertJSONOK [defaultUser]
+      get "/users?name=Luser" >>= assertJSONOK [(defaultUser, [] :: [()])]
       get "/users?name=Ruser" >>= assertJSONOK ()
+    it "returns associated user attributes" $ do
+      initUserAttribute
+      get "/users" >>= assertJSONOK [defaultUserWithAttrs]
 
 postSpec :: Spec
 postSpec =
@@ -83,6 +91,9 @@ postSpec =
     it "won't insert two users with the same name" $ do
       initUser
       post  "/users" "name=Luser" >>= assertJSONError 500 "INTERNAL"
+    it "successfully inserts a user with attributes" $ do
+      initUserAttribute
+      get "/users" >>= assertJSONOK [defaultUserWithAttrs]
     itReturnsMissingParam $ post "/users" ""
 
 replaceSpec :: Spec
@@ -93,7 +104,7 @@ replaceSpec =
       put "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
 
 deleteSpec :: Spec
-deleteSpec = rubbishSpec "user" initUser [defaultUser]
+deleteSpec = rubbishSpec "user" initUser [(defaultUser, [] :: [()])]
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "user" initUser
@@ -101,6 +112,22 @@ purgeSpec = unsafeRubbishSpec "user" initUser
 patchSpec :: Spec
 patchSpec =
   describe "PATCH /users" $ do
-    it "modifies an existing user's name" $ do
+    it "modifies an existing user and its attributes" $ do
       initUser
       patch "/users" "user=1&name=Abuser" >>= assertJSONOK (jsonKey 1)
+
+attributesSpec :: Spec
+attributesSpec =
+  describe "PATCH /userAttributes" $ do
+    it "inserts a user attribute with key 1"
+      initUserAttribute
+    it "modifies an existing user attribute" $ do
+      initUserAttribute
+      patch "/userAttributes" "user=1&key=name&value=new" >>=
+        assertJSONOK (jsonKey 1)
+      get "/users" >>= assertJSONOK [(defaultUser, [modUserAttr])]
+    it "deletes an existing user attribute" $ do
+      initUserAttribute
+      patch "/userAttributes" "user=1&key=name" >>= assertJSONOK jsonSuccess
+      get "/users" >>= assertJSONOK [(defaultUser, [] :: [()])]
+    itReturnsMissingParam $ patch "/userAttributes" ""

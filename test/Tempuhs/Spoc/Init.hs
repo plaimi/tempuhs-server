@@ -91,18 +91,25 @@ initSubTimespan n m = post "/timespans" body >>= assertJSONOK (jsonKey n)
   where body =
           "parent=" `L.append` showL8 m `L.append` "&clock=TT&beginMin=-10.0"
 
-initAttribute :: Session ()
--- | 'initAttribute' does 'initTimespanSpecs', then inserts a timespan
+initTimespanAttribute :: Session ()
+-- | 'initTimespanAttribute' does 'initTimespanSpecs', then inserts a timespan
 -- attribute and checks the response.
-initAttribute =
+initTimespanAttribute =
   initTimespanSpecs specifieds >>
-    patch "/attributes" body >>= assertJSONOK (jsonKey 1)
+    patch "/timespanAttributes" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&key=title&value=test"
 
 initUser :: Session ()
 -- | 'initUser' inserts a user into an empty database and checks the
 -- response.
 initUser = post "/users" "name=Luser" >>= assertJSONOK (jsonKey 1)
+
+initUserAttribute :: Session ()
+-- | 'initUserAttribute' does 'initUser', then inserts a user attribute and
+-- checks the response.
+initUserAttribute =
+  initUser >> patch "/userAttributes" body >>= assertJSONOK (jsonKey 1)
+  where body = "user=1&key=name&value=test"
 
 initRole :: Session ()
 -- | 'initRole' does 'initUser', and then inserts a role and checks the

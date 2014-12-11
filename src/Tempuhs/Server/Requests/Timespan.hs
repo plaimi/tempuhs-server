@@ -9,10 +9,6 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Timespan where
 
-import Control.Arrow
-  (
-  second,
-  )
 import Control.Monad
   (
   void,
@@ -52,9 +48,8 @@ import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
   (=..),
-  attributeSearch,
   clockParam,
-  getAttrs,
+  joinList,
   liftAE,
   mkKey,
   runDatabase,
@@ -72,10 +67,17 @@ import Tempuhs.Server.Param
   paramE,
   rescueMissing,
   )
-import Tempuhs.Server.Requests.Timespan.Attributes
+import Tempuhs.Server.Requests.Attributes.Mono
+  (
+  getTimespanAttrs,
+  updateTimespanAttributes,
+  )
+import Tempuhs.Server.Requests.Attributes.Poly
   (
   attributesParams,
-  updateAttribute,
+  attributeSearch,
+  insertAttributes,
+  patchAttribute,
   )
 import Tempuhs.Server.Requests.Timespan.Util
   (
@@ -83,7 +85,6 @@ import Tempuhs.Server.Requests.Timespan.Util
   descendantLookup,
   filters,
   idFilter,
-  joinList,
   timeParams,
   )
 import Tempuhs.Server.Spock
@@ -102,7 +103,8 @@ timespans pool = do
   e     <- maybeParam     "end"
   r     <- maybeParam     "rubbish"
   ds    <- defaultParam 0 "descendants"
-  joins <- attributeSearch
+  joins <- attributeSearch TimespanAttributeTimespan TimespanId
+                           TimespanAttributeName TimespanAttributeValue
   runDatabase pool $ do
     c <- liftAE . rescueMissing =<< erretreat (clockParam "c")
     list <- E.select $
@@ -114,7 +116,8 @@ timespans pool = do
           orderBy [asc $ t ^. TimespanId]
           return t
     descs <- descendantLookup (ceiling (ds :: Double)) (entityKey <$> list)
-    liftAE . json =<< mapM (\a -> (,) a <$> getAttrs a) (list ++ descs)
+    liftAE . json =<< mapM (\a -> (,) a <$> getTimespanAttrs a)
+                                                (list ++ descs)
 
 postTimespan :: ConnectionPool -> ActionE ()
 -- | 'postTimespan' inserts a 'Timespan'.
@@ -128,7 +131,7 @@ postTimespan pool = do
     c   <- clockParam "clock"
     tid <- insert $ Timespan (mkKey <$> p) (entityKey c)
                              bMin bMax eMin eMax w r
-    mapM_ (insert . uncurry (TimespanAttribute tid)) as
+    insertAttributes TimespanAttribute as tid
     return tid
 
 replaceTimespan :: ConnectionPool -> ActionE ()
@@ -144,7 +147,7 @@ replaceTimespan pool = do
     c      <- clockParam "clock"
     let tid = mkKey t
     replace tid $ Timespan (mkKey <$> p) (entityKey c) bMin bMax eMin eMax w r
-    mapM_ (insert . uncurry (TimespanAttribute tid)) as
+    insertAttributes TimespanAttribute as tid
     return tid
 
 deleteTimespan :: ConnectionPool -> ActionE ()
@@ -154,7 +157,7 @@ deleteTimespan = nowow "timespan" TimespanRubbish
 unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
 unsafeDeleteTimespan p =
-  void $ (owow "timespan" p :: ActionE (Maybe (Key Timespan)))
+  void (owow "timespan" p :: ActionE (Maybe (Key Timespan)))
 
 patchTimespan :: ConnectionPool -> ActionE ()
 -- | 'patchTimespan' modifies a 'Timespan'.
@@ -178,13 +181,11 @@ patchTimespan pool = do
                       ,TimespanEndMax   =.. eMax
                       ,TimespanWeight   =.. w
                       ]
-    mapM_ (uncurry (updateAttribute k) . second Just) as
+    updateTimespanAttributes k as
     return k
 
-patchAttribute :: ConnectionPool -> ActionE ()
--- | 'patchAttribute' sets or removes a 'TimespanAttribute'.
-patchAttribute p = do
-  t     <- paramE     "timespan"
-  key   <- paramE     "key"
-  value <- maybeParam "value"
-  runDatabase p $ let k = mkKey t in updateAttribute k key value
+patchTimespanAttribute :: ConnectionPool -> ActionE ()
+-- | 'patchTimespanAttribute' sets or removes a 'TimespanAttribute'.
+patchTimespanAttribute = patchAttribute "timespan" UniqueTimespanAttribute
+                                                   TimespanAttributeValue
+                                                   TimespanAttribute

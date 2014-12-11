@@ -78,9 +78,13 @@ Get the clock with ID 1, if any:
 
 /users
 =======
-Retrieve all users that match the given criteria.
+Retrieve all users that match the given criteria, as well as the associated
+user attributes.
   name: string, optional -- the name of a user
   id: integer, optional -- the ID of a user
+  *_: string -- filter on exact attribute value (can be give multiple times)
+  *_like: string -- filter on part of attribute value using SQL LIKE (can be
+                 -- given multiple times)
 
 Examples:
 ---------
@@ -92,6 +96,13 @@ Get the user named "Luser", if any:
 
 Get the user with ID 1, if any:
   /users?id=1
+
+Get all users that have a "Name" attribute with value "rms":
+  /users?Name_=rms
+
+Get all users that have an "Email" attribute with a value that ends with
+"@gmail.com":
+  /users?Email_like="@gmail.com%"
 
 /roles
 =======

@@ -185,6 +185,17 @@ defaultUser :: Entity User
 -- 'Init.initUser'.
 defaultUser = Entity (mkKey 1) $ User "Luser" Nothing
 
+defaultUserWithAttrs :: (Entity User, [Entity UserAttribute])
+-- | 'defaultUserWithAttrs' is a helper value for the often used
+-- 'Init.initUserAttribute'.
+defaultUserWithAttrs = (defaultUser
+                       ,[Entity (mkKey 1) $ UserAttribute (mkKey 1)
+                                                          "name" "test"])
+
+modUserAttr :: Entity UserAttribute
+-- | 'modUserAttr' is a helper value for testing a modified 'UserAttribute'.
+modUserAttr = Entity (mkKey 1) $ UserAttribute (mkKey 1) "name" "new"
+
 defaultRole :: Entity Role
 -- | 'defaultRole' is a helper value for the often used
 -- 'Init.initRole'.

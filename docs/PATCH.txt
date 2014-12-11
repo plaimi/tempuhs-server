@@ -28,7 +28,7 @@ Patch timespan 1 to beginMin at 5, and endMax at 6.
 Patch timespan 1 to have attributes "foo" = "fu", and "bar" = "baz":
   timespan=1&foo_=fu&bar_=baz
 
-/attributes
+/timespanAttributes
 ===========
 Insert or remove an attribute for a given timespan.
   timespan: integer -- ID of timespan for which to change an attribute
@@ -88,8 +88,28 @@ Modify a user.
 
   user: integer -- ID of the user to modify
   name: string -- new username
+  *_: string -- attributes to add or modify
 
 Examples
 --------
 Rename user 1 to Abuser:
   user=1&name=Abuser
+
+Patch user 1 to have attributes "foo" = "fu", and "bar" = "baz":
+  user=1&foo_=fu&bar_=baz
+
+/userAttributes
+===========
+Insert or remove an attribute for a given User.
+  user: integer -- ID of user for which to change an attribute
+  key: string -- the name of the attribute
+  value: string, optional -- the new value if given, otherwise the
+                          -- attribute is removed
+Examples
+---------
+Insert the "Email" attribute with the value "foo@mail.com" to the timespan
+with ID 42:
+  user=42&key=Email&value=foo@mail.com
+
+Remove the "Email" attribute from the user with ID 42:
+  user=42&key=Email

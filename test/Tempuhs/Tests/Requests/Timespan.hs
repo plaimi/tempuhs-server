@@ -58,7 +58,7 @@ import Tempuhs.Spoc.Entity
   )
 import Tempuhs.Spoc.Init
   (
-  initAttribute,
+  initTimespanAttribute,
   initClock,
   initDefaultTimespan,
   initModTimespan,
@@ -127,7 +127,7 @@ getSpec =
       forM_ ["begin=43", "end=9"] $
         get . B.append "/timespans?" >=> assertJSONOK ()
     it "returns associated timespan attributes" $ do
-      initAttribute
+      initTimespanAttribute
       getTimespans (10, 42) >>=
         assertJSONOK (timespansSpecsAttrs specifieds [("title", "test")])
     it "filters on parent" $ do
@@ -229,18 +229,19 @@ patchSpec =
 
 attributesSpec :: Spec
 attributesSpec =
-  describe "PATCH /attributes" $ do
+  describe "PATCH /timespanAttributes" $ do
     it "inserts a timespan attribute with key 1"
-      initAttribute
+      initTimespanAttribute
     it "modifies an existing timespan attribute" $ do
-      initAttribute
-      patch "/attributes" "timespan=1&key=title&value=new" >>=
+      initTimespanAttribute
+      patch "/timespanAttributes" "timespan=1&key=title&value=new" >>=
         assertJSONOK (jsonKey 1)
       getTimespans (10, 42) >>=
         assertJSONOK (timespansSpecsAttrs specifieds [("title", "new")])
     it "deletes an existing timespan attribute" $ do
-      initAttribute
-      patch "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
+      initTimespanAttribute
+      patch "/timespanAttributes" "timespan=1&key=title" >>=
+        assertJSONOK jsonSuccess
       getTimespans (10, 42) >>=
         assertJSONOK [(timespanEntity specifieds, [] :: [()])]
-    itReturnsMissingParam $ patch "/attributes" ""
+    itReturnsMissingParam $ patch "/timespanAttributes" ""

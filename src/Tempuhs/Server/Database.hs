@@ -1,4 +1,6 @@
+{-# LANGUAGE KindSignatures    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 {- |
 Module      :  $Header$
@@ -20,28 +22,27 @@ import Control.Monad.Trans.Resource
   )
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import qualified Database.Esqueleto as E
 import Database.Esqueleto
   (
-  Value,
-  (^.),
-  (&&.),
-  like,
+  from,
+  isNothing,
   val,
+  where_,
   )
-import qualified Database.Esqueleto as E
+import qualified Database.Esqueleto.Internal.Language
+  (
+  From,
+  )
 import Database.Persist
   (
   Entity,
   Key,
   PersistEntity,
   PersistValue (PersistInt64),
-  SelectOpt (Asc),
   (=.),
-  (==.),
-  entityKey,
   getBy,
   keyFromValues,
-  selectList,
   )
 import Database.Persist.Class
   (
@@ -61,7 +62,6 @@ import Database.Persist.Types
   )
 import Web.Scotty.Trans
   (
-  params,
   raise,
   )
 
@@ -83,12 +83,6 @@ runSqlPersistAPool :: SqlPersistA a -> ConnectionPool -> ActionE a
 -- | 'runSqlPersistAPool' runs a database transaction within an 'ActionE',
 -- using a connection from the given 'ConnectionPool'.
 runSqlPersistAPool x pool = runResourceT $ runSqlPool x pool
-
-getAttrs :: Entity Timespan -> SqlPersistA [Entity TimespanAttribute]
--- | 'getAttrs' returns a list of all 'TimespanAttribute's for a given
--- 'Timespan'.
-getAttrs e = selectList [TimespanAttributeTimespan ==. entityKey e]
-                        [Asc TimespanAttributeId]
 
 mkKey :: PersistEntity record => Integer -> Key record
 -- | 'mkKey' is a convenience function for constructing a database key.
@@ -122,25 +116,30 @@ clockParam p = do
 -- 'Nothing'), '[]' is returned.
 f =.. v = [f =. w | Just w <- [v]]
 
-attributeSearch :: E.Esqueleto query expr backend
-                => ActionE [expr (Entity Timespan)
-                         -> expr (Entity TimespanAttribute)
-                         -> expr (Value Bool)]
--- | 'attributeSearch' uses the list of request parametres to construct a list
--- of functions that can be used in an 'Esqueleto' query to filter 'Timespan's
--- based on their 'TimespanAttribute's.
-attributeSearch = do
-  ps <- params
-  return $ do
-    (p, v) <- ps
-    let (n_, o) = T.breakOnEnd "_" $ L.toStrict p
-    (#) <- case o of
-             ""     -> [(E.==.)]
-             "like" -> [like]
-             _      -> []
-    case T.stripSuffix "_" n_ of
-      Just n -> [\t a ->
-                   a ^. TimespanAttributeName E.==. val n &&.
-                   a ^. TimespanAttributeValue # (val $ L.toStrict v) &&.
-                   a ^. TimespanAttributeTimespan E.==. t ^. TimespanId]
-      _      -> []
+joinList :: forall (m :: * -> *) a b (expr :: * -> *) backend.
+                   Database.Esqueleto.Internal.Language.From m expr backend a
+         => [b -> a -> expr (E.Value Bool)] -> m b -> m b
+-- | 'joinList' takes two lists of Esqueleto expressions. The first is a list
+-- of expressions to SQL JOIN to every member of the second list, typically
+-- a list of SQL SELECTs.
+joinList (e:es) t = joinList es t >>= \t' -> from $ \b -> where_ (e t' b)
+                                                       >> return t'
+joinList []     t = t
+
+cmpMaybe :: forall t (query :: * -> *) (expr :: * -> *)
+                     backend (query1 :: * -> *) (expr1 :: * -> *)
+                     backend1 typ.
+                     (E.Esqueleto query1 expr1 backend1
+                     ,E.Esqueleto query expr backend
+                     ,E.PersistField typ
+                     ,E.PersistField t)
+          => (expr1 (E.Value (Maybe typ))
+          -> expr (E.Value (Maybe t))
+          -> expr1 (E.Value Bool))
+          -> expr1 (E.Value (Maybe typ))
+          -> Maybe t
+          -> expr1 (E.Value Bool)
+-- | If b is 'Just', 'cmpMaybe' applies the passed in function to a, and gets
+-- the value of b. If b is 'Nothing', 'cmpMaybe' checks if a is 'Nothing'.
+cmpMaybe f a b@(Just _) = f a $ val b
+cmpMaybe _ a _          = isNothing a

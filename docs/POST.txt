@@ -48,11 +48,16 @@ Add the Julian Day Number system as a clock:
 =======
 Insert a new user.
   name: string -- name used to identify the user
+  *_: string -- anything that ends with a '_' is considered an attribute. See
+                the examples for more information.
 
 Examples
 --------
 Add the Luser user:
   name=Luser
+
+Add the Luser user, with attributes "foo" = "fu", and "bar" = "baz":
+  name=Luser&foo_=fu&bar_=baz
 
 /roles
 =======

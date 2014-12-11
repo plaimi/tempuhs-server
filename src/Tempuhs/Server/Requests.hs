@@ -51,8 +51,8 @@ import Tempuhs.Server.Requests.Role
 import Tempuhs.Server.Requests.Timespan
   (
   deleteTimespan,
-  patchAttribute,
   patchTimespan,
+  patchTimespanAttribute,
   postTimespan,
   replaceTimespan,
   timespans,
@@ -63,6 +63,7 @@ import Tempuhs.Server.Requests.User
   users,
   deleteUser,
   patchUser,
+  patchUserAttribute,
   postUser,
   replaceUser,
   unsafeDeleteUser,
@@ -100,19 +101,20 @@ roleRequests p = do
 
 timespanRequests :: ConnectionPool -> ScottyE ()
 timespanRequests p = do
-  get    "/timespans"        $ timespans            p
-  post   "/timespans"        $ postTimespan         p
-  put    "/timespans"        $ replaceTimespan      p
-  delete "/timespans"        $ deleteTimespan       p
-  delete "/timespans/purge"  $ unsafeDeleteTimespan p
-  patch  "/timespans"        $ patchTimespan        p
-  patch  "/attributes"       $ patchAttribute       p
+  get    "/timespans"          $ timespans              p
+  post   "/timespans"          $ postTimespan           p
+  put    "/timespans"          $ replaceTimespan        p
+  delete "/timespans"          $ deleteTimespan         p
+  delete "/timespans/purge"    $ unsafeDeleteTimespan   p
+  patch  "/timespans"          $ patchTimespan          p
+  patch  "/timespanAttributes" $ patchTimespanAttribute p
 
 userRequests :: ConnectionPool -> ScottyE ()
 userRequests p = do
-  get    "/users"       $ users            p
-  post   "/users"       $ postUser         p
-  put    "/users"       $ replaceUser      p
-  delete "/users"       $ deleteUser       p
-  delete "/users/purge" $ unsafeDeleteUser p
-  patch  "/users"       $ patchUser        p
+  get    "/users"          $ users             p
+  post   "/users"          $ postUser          p
+  put    "/users"          $ replaceUser       p
+  delete "/users"          $ deleteUser        p
+  delete "/users/purge"    $ unsafeDeleteUser  p
+  patch  "/users"          $ patchUser         p
+  patch  "/userAttributes" $ patchUserAttribute p

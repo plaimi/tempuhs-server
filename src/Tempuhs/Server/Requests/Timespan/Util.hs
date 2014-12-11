@@ -39,15 +39,8 @@ import Database.Esqueleto
   (<=.),
   (>=.),
   asc,
-  from,
-  isNothing,
   orderBy,
   val,
-  where_,
-  )
-import qualified Database.Esqueleto.Internal.Language
-  (
-  From,
   )
 import Data.Foldable
   (
@@ -74,40 +67,13 @@ import Tempuhs.Server.Param
   )
 import Tempuhs.Server.Database
   (
+  cmpMaybe,
   mkKey,
   )
 import Tempuhs.Server.Spock
   (
   ActionE,
   )
-
-joinList :: forall (m :: * -> *) a b (expr :: * -> *) backend.
-                   Database.Esqueleto.Internal.Language.From m expr backend a
-         => [b -> a -> expr (E.Value Bool)] -> m b -> m b
--- | 'joinList' takes two lists of Esqueleto expressions. The first is a list
--- of expressions to SQL JOIN to every member of the second list, typically
--- a list of SQL SELECTs.
-joinList (e:es) t = joinList es t >>= \t' -> from $ \b -> where_ (e t' b)
-                                                       >> return t'
-joinList []     t = t
-
-cmpMaybe :: forall t (query :: * -> *) (expr :: * -> *)
-                     backend (query1 :: * -> *) (expr1 :: * -> *)
-                     backend1 typ.
-                     (E.Esqueleto query1 expr1 backend1
-                     ,E.Esqueleto query expr backend
-                     ,E.PersistField typ
-                     ,E.PersistField t)
-          => (expr1 (E.Value (Maybe typ))
-          -> expr (E.Value (Maybe t))
-          -> expr1 (E.Value Bool))
-          -> expr1 (E.Value (Maybe typ))
-          -> Maybe t
-          -> expr1 (E.Value Bool)
--- | If b is 'Just', 'cmpMaybe' applies the passed in function to a, and gets
--- the value of b. If b is 'Nothing', 'cmpMaybe' checks if a is 'Nothing'.
-cmpMaybe f a b@(Just _) = f a $ val b
-cmpMaybe _ a _          = isNothing a
 
 filters :: forall (query :: * -> *) backend (expr :: * -> *)
                   (t :: * -> *) (t1 :: * -> *).
