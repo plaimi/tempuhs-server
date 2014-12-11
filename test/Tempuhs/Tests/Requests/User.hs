@@ -42,6 +42,7 @@ import Tempuhs.Spoc.JSON
 import Tempuhs.Spoc.Request
   (
   get,
+  patch,
   post,
   put,
   )
@@ -59,6 +60,7 @@ userSpec = do
   replaceSpec
   deleteSpec
   purgeSpec
+  patchSpec
 
 getSpec :: Spec
 getSpec =
@@ -95,3 +97,10 @@ deleteSpec = rubbishSpec "user" initUser [defaultUser]
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "user" initUser
+
+patchSpec :: Spec
+patchSpec =
+  describe "PATCH /users" $ do
+    it "modifies an existing user's name" $ do
+      initUser
+      patch "/users" "user=1&name=Abuser" >>= assertJSONOK (jsonKey 1)
