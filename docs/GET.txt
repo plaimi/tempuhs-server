@@ -120,10 +120,10 @@ Get a list of all roles:
 Get the role named "Rulle", if any:
   /roles?name=Rulle
 
-Get the Role with ID 1, if any:
+Get the role with ID 1, if any:
   /roles?id=1
 
-Get the Role with the namespace of the user with ID 902, if any:
+Get the role with the namespace of the user with ID 902, if any:
   /roles?namespace=902
 
 /permissionsets
