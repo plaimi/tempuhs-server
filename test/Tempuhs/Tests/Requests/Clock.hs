@@ -42,7 +42,9 @@ import Tempuhs.Spoc.JSON
 import Tempuhs.Spoc.Request
   (
   get,
+  patch,
   post,
+  put,
   )
 import Tempuhs.Tests.Requests.DELETE
   (
@@ -52,23 +54,11 @@ import Tempuhs.Tests.Requests.DELETE
 clockSpec :: Spec
 -- | 'clockSpec' runs the 'Clock' 'Spec's.
 clockSpec = do
-  postSpec
   getSpec
+  postSpec
+  replaceSpec
   purgeSpec
-
-postSpec :: Spec
-postSpec =
-  describe "POST /clocks" $ do
-    it "inserts a clock with key 1"
-      initClock
-    it "won't insert two clocks with the same name" $ do
-      initClock
-      post  "/clocks" "name=TT" >>= assertJSONError 500 "INTERNAL"
-    it "modifies an existing clock" $ do
-      initClock
-      post "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)
-      post "/clocks" "name=TT" >>= assertJSONOK (jsonKey 2)
-    itReturnsMissingParam $ post "/clocks" ""
+  patchSpec
 
 getSpec :: Spec
 getSpec =
@@ -87,5 +77,29 @@ getSpec =
       get "/clocks?id=1" >>= assertJSONOK [defaultClock]
       get "/clocks?id=2" >>= assertJSONOK ()
 
+postSpec :: Spec
+postSpec =
+  describe "POST /clocks" $ do
+    it "inserts a clock with key 1"
+      initClock
+    it "won't insert two clocks with the same name" $ do
+      initClock
+      post  "/clocks" "name=TT" >>= assertJSONError 500 "INTERNAL"
+    itReturnsMissingParam $ post "/clocks" ""
+
+replaceSpec :: Spec
+replaceSpec =
+  describe "PUT /clocks" $ do
+    it "replaces an existing clock" $ do
+      initClock
+      put "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)
+
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "clock" initClock
+
+patchSpec :: Spec
+patchSpec =
+  describe "PATCH /clocks" $ do
+    it "updates an existing clock" $ do
+      initClock
+      patch "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)

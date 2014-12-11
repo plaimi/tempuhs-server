@@ -119,13 +119,13 @@ timespanEntity ss =
       case ("beginMax" `Z.member` ss
            ,"endMin"   `Z.member` ss
            ,"endMax"   `Z.member` ss) of
-        (False, False, False) -> (11, 10, 11)
-        (True,  False, False) -> (15, 10, 15)
-        (True,  True,  False) -> (15, 24, 25)
-        (False, True,  False) -> (11, 24, 25)
-        (True,  False, True)  -> (15, 41, 42)
-        (False, True,  True)  -> (11, 24, 42)
-        (False, False, True)  -> (11, 41, 42)
+        (False, False, False) -> (10, 10, 10)
+        (True,  False, False) -> (15, 15, 15)
+        (True,  True,  False) -> (15, 24, 24)
+        (False, True,  False) -> (10, 24, 24)
+        (True,  False, True)  -> (15, 42, 42)
+        (False, True,  True)  -> (10, 24, 42)
+        (False, False, True)  -> (10, 42, 42)
         (True,  True,  True)  -> (15, 24, 42)
 
 timespansSpecsAttrs :: Z.Set Specified -> [AttributePair]
@@ -167,7 +167,7 @@ specialTimespan :: Integer -> Maybe Integer -> Entity Timespan
 -- from 'defaultTimespans'. It takes the Key ID and a 'Maybe' Parent ID.
 specialTimespan n p =
   Entity (mkKey n) $
-         Timespan (mkKey <$> p) (mkKey 1) (-10) (-9) (-10) (-9) 1 Nothing
+         Timespan (mkKey <$> p) (mkKey 1) (-10) (-10) (-10) (-10) 1 Nothing
 
 mkAttributeEntities :: [AttributePair] -> [Entity TimespanAttribute]
 -- | 'mkAttributeEntities' takes a list of key-value pairs and makes

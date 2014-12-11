@@ -11,12 +11,10 @@ Maintainer  :  tempuhs@plaimi.net
 
 import Control.Arrow
   (
-  first,
   second,
   )
 import Control.Monad
   (
-  join,
   void,
   )
 import qualified Database.Esqueleto as E
@@ -32,38 +30,27 @@ import Data.Functor
   (
   (<$>),
   )
-import Data.Maybe
-  (
-  fromMaybe,
-  )
 import Database.Persist
   (
-  Entity (Entity),
   Key (Key),
-  (=.),
   entityKey,
-  getBy,
-  delete,
   insert,
+  replace,
   update,
   )
 import Database.Persist.Sql
   (
   ConnectionPool,
   )
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
 import Web.Scotty.Trans
   (
   json,
-  params,
   )
 
 import Plailude
 import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
-  SqlPersistA,
   (=..),
   attributeSearch,
   clockParam,
@@ -85,6 +72,11 @@ import Tempuhs.Server.Param
   paramE,
   rescueMissing,
   )
+import Tempuhs.Server.Requests.Timespan.Attributes
+  (
+  attributesParams,
+  updateAttribute,
+  )
 import Tempuhs.Server.Requests.Timespan.Util
   (
   clockFilter,
@@ -92,72 +84,13 @@ import Tempuhs.Server.Requests.Timespan.Util
   filters,
   idFilter,
   joinList,
+  timeParams,
   )
 import Tempuhs.Server.Spock
   (
   ActionE,
   jsonKey,
-  jsonSuccess,
   )
-
-postTimespan :: ConnectionPool -> ActionE ()
--- | 'postTimespan' inserts a new 'Timespan' into the database with the given
--- attributes. Or, if the ID of an existing 'Timespan' is given, updates that
--- instead.
-postTimespan pool = do
-  t             <- maybeParam     "timespan"
-  maybeParent   <- maybeParam     "parent"
-  maybeBeginMin <- maybeParam     "beginMin"
-  maybeBeginMax <- maybeParam     "beginMax"
-  maybeEndMin   <- maybeParam     "endMin"
-  maybeEndMax   <- maybeParam     "endMax"
-  w             <- defaultParam 1 "weight"
-  r             <- return Nothing
-  -- If it ends with an '_', consider it an attribute. "&foo_=fu&bar_=baz".
-  -- attrs is a list of key-value tuples.
-  attrs         <- filter (L.isSuffixOf "_" . fst) <$> params
-
-  -- "parent=n"  -> Just Just n
-  -- "parent="   -> Just Nothing
-  -- "parent"    -> Just Nothing
-  -- Unspecified -> Nothing
-  let p  = fmap mkKey . maybeUnwrap <$> maybeParent
-      as = map (both L.toStrict . first L.init) attrs
-
-  runDatabase pool $ do
-    liftAE . jsonKey =<< case t of
-      Just i  -> do
-        let k = mkKey i
-        c <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
-
-        update k $ concat [TimespanParent   =.. p
-                          ,TimespanClock    =.. (entityKey <$> c)
-                          ,TimespanBeginMin =.. maybeBeginMin
-                          ,TimespanBeginMax =.. maybeBeginMax
-                          ,TimespanEndMin   =.. maybeEndMin
-                          ,TimespanEndMax   =.. maybeEndMax
-                          ]
-        mapM_ (uncurry (updateAttribute k) . second Just) as
-        return k
-      Nothing -> do
-        bMin <- liftAE $ paramE "beginMin"
-        -- If beginMax isn't specified, set it to beginMin + 1
-        let bMax         = fromMaybe (bMin + (1 :: ProperTime)) maybeBeginMax
-        -- If endMin isn't specified, set it to endMax-1.
-        -- If endMax isn't specified, set it to endMin+1.
-        -- If neither are specified, set them to beginMax and beginMax+1.
-            (eMin, eMax) =
-              case (maybeEndMin, maybeEndMax) of
-                (Nothing, Nothing) ->
-                  (bMin, fromMaybe (bMin + (1 :: ProperTime)) maybeBeginMax)
-                (Just a, Nothing)  -> (a, a + (1 :: ProperTime))
-                (Nothing, Just b)  -> (b + (-1 :: ProperTime), b)
-                (Just a, Just b)   -> (a, b)
-        c    <- clockParam "clock"
-        tid  <- insert $ Timespan (join p) (entityKey c) bMin bMax eMin eMax
-                                  w r
-        mapM_ (insert . uncurry (TimespanAttribute tid)) as
-        return tid
 
 timespans :: ConnectionPool -> ActionE ()
 -- | 'timespans' serves a basic request for a list of 'Timespan's with their
@@ -183,47 +116,75 @@ timespans pool = do
     descs <- descendantLookup (ceiling (ds :: Double)) (entityKey <$> list)
     liftAE . json =<< mapM (\a -> (,) a <$> getAttrs a) (list ++ descs)
 
+postTimespan :: ConnectionPool -> ActionE ()
+-- | 'postTimespan' inserts a 'Timespan'.
+postTimespan pool = do
+  p                             <- maybeParam     "parent"
+  ((bMin, bMax), (eMin, eMax))  <- timeParams
+  w                             <- defaultParam 1 "weight"
+  r                             <- return Nothing
+  as                            <- attributesParams
+  runDatabase pool $ liftAE . jsonKey =<< do
+    c   <- clockParam "clock"
+    tid <- insert $ Timespan (mkKey <$> p) (entityKey c)
+                             bMin bMax eMin eMax w r
+    mapM_ (insert . uncurry (TimespanAttribute tid)) as
+    return tid
+
+replaceTimespan :: ConnectionPool -> ActionE ()
+-- | 'replaceTimespan' replaces a 'Timespan'.
+replaceTimespan pool = do
+  t                             <- paramE         "timespan"
+  p                             <- maybeParam     "parent"
+  ((bMin, bMax), (eMin, eMax))  <- timeParams
+  w                             <- defaultParam 1 "weight"
+  r                             <- return Nothing
+  as                            <- attributesParams
+  runDatabase pool $ liftAE . jsonKey =<< do
+    c      <- clockParam "clock"
+    let tid = mkKey t
+    replace tid $ Timespan (mkKey <$> p) (entityKey c) bMin bMax eMin eMax w r
+    mapM_ (insert . uncurry (TimespanAttribute tid)) as
+    return tid
+
 deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
 deleteTimespan = nowow "timespan" TimespanRubbish
-
-postAttribute :: ConnectionPool -> ActionE ()
--- | 'postAttribute' sets or removes a 'TimespanAttribute' based on a request.
-postAttribute p = do
-  t     <- paramE     "timespan"
-  key   <- paramE     "key"
-  value <- maybeParam "value"
-  runDatabase p $ updateAttribute (mkKey t) key value
-
-updateAttribute :: Key Timespan -> T.Text -> Maybe T.Text -> SqlPersistA ()
--- | 'updateAttribute' updates the 'TimespanAttribute' of a 'Timespan'. It
--- takes a @'Key' 'Timespan'@, which is the ID of the 'Timespan' the attribute
--- is related to, a key, and a 'Maybe' value. If the key already exists in the
--- database, it is updated. If not, it is inserted. If the value is 'Nothing',
--- the key is deleted if it exists. If the 'Timespan' does not exist, nothing
--- happens.
-updateAttribute tid k v = do
-    ma <- getBy $ UniqueTimespanAttribute tid k
-    case v of
-      Nothing -> deleteAttribute ma
-      Just w  -> liftAE . jsonKey =<<
-        case ma of
-          Just (Entity aid _) -> do
-            update aid [TimespanAttributeValue =. w]
-            return aid
-          Nothing -> insert $ TimespanAttribute tid k w
-
-deleteAttribute :: Maybe (Entity TimespanAttribute) -> SqlPersistA ()
--- | 'deleteAttribute' takes a 'Maybe' attribute and deletes it if it's 'Just'
--- an attribute. If it's 'Nothing' this means the attribute doesn't exist in
--- the database, so nothing happens.
-deleteAttribute a = do
-  case a of
-    Just (Entity aid _) -> delete aid
-    Nothing             -> return ()
-  liftAE jsonSuccess
 
 unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
 unsafeDeleteTimespan p =
   void $ (owow "timespan" p :: ActionE (Maybe (Key Timespan)))
+
+patchTimespan :: ConnectionPool -> ActionE ()
+-- | 'patchTimespan' modifies a 'Timespan'.
+patchTimespan pool = do
+  t      <- paramE     "timespan"
+  p      <- maybeParam "parent"
+  bMin   <- maybeParam "beginMin"
+  bMax   <- maybeParam "beginMax"
+  eMin   <- maybeParam "endMin"
+  eMax   <- maybeParam "endMax"
+  w      <- maybeParam "weight"
+  as     <- attributesParams
+  runDatabase pool $ liftAE . jsonKey =<< do
+    c <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
+    let k = mkKey t
+    update k $ concat [TimespanParent   =.. (fmap mkKey . maybeUnwrap <$> p)
+                      ,TimespanClock    =.. (entityKey <$> c)
+                      ,TimespanBeginMin =.. bMin
+                      ,TimespanBeginMax =.. bMax
+                      ,TimespanEndMin   =.. eMin
+                      ,TimespanEndMax   =.. eMax
+                      ,TimespanWeight   =.. w
+                      ]
+    mapM_ (uncurry (updateAttribute k) . second Just) as
+    return k
+
+patchAttribute :: ConnectionPool -> ActionE ()
+-- | 'patchAttribute' sets or removes a 'TimespanAttribute'.
+patchAttribute p = do
+  t     <- paramE     "timespan"
+  key   <- paramE     "key"
+  value <- maybeParam "value"
+  runDatabase p $ let k = mkKey t in updateAttribute k key value

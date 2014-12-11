@@ -1,4 +1,5 @@
 {-# LANGUAGE KindSignatures    #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 
 {- |
@@ -26,6 +27,10 @@ import Control.Monad.Trans.Reader
 import Data.Functor
   (
   (<$>),
+  )
+import Data.Maybe
+  (
+  fromMaybe,
   )
 import qualified Database.Esqueleto as E
 import Database.Esqueleto
@@ -64,10 +69,16 @@ import Tempuhs.Chronology
 import Tempuhs.Server.Param
   (
   ParsableWrapper (parsableUnwrap),
+  maybeParam,
+  paramE,
   )
 import Tempuhs.Server.Database
   (
   mkKey,
+  )
+import Tempuhs.Server.Spock
+  (
+  ActionE,
   )
 
 joinList :: forall (m :: * -> *) a b (expr :: * -> *) backend.
@@ -154,3 +165,22 @@ descendantLookup n ids | n <= 0    = return []
                                                return t)
                            (jds ++) <$> descendantLookup (n - 1)
                                              (entityKey <$> jds)
+
+timeParams :: ActionE ((ProperTime, ProperTime), (ProperTime, ProperTime))
+-- | 'timeParams' gets beginMin, beginMax, endMin & endMax for a 'Timespan',
+-- and deals with all the implicit stuff if something is omitted.
+timeParams = do
+  bMin <- paramE         "beginMin"
+  bMax <- maybeParam     "beginMax"
+  eMin <- maybeParam     "endMin"
+  eMax <- maybeParam     "endMax"
+  -- If beginMax isn't specified, set it to beginMin.
+  -- If endMin isn't specified, set it to endMax.
+  -- If endMax isn't specified, set it to endMin.
+  -- If neither are specified, set them to beginMax.
+  return ((bMin, fromMaybe bMin bMax)
+         ,case (eMin, eMax) of
+            (Nothing, Nothing) -> join (,) $ fromMaybe bMin bMax
+            (Just a, Nothing)  -> (a, a)
+            (Nothing, Just b)  -> (b, b)
+            (Just a, Just b)   -> (a, b))

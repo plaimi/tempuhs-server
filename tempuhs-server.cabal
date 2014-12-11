@@ -23,6 +23,7 @@ library
                        Tempuhs.Server.Requests.Permissionset
                        Tempuhs.Server.Requests.Role
                        Tempuhs.Server.Requests.Timespan
+                       Tempuhs.Server.Requests.Timespan.Attributes
                        Tempuhs.Server.Requests.Timespan.Util
                        Tempuhs.Server.Requests.User
                        Tempuhs.Server.Spock

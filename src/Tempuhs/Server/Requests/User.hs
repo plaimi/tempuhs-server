@@ -21,10 +21,12 @@ import Database.Persist
   (
   Key,
   SelectOpt (Asc),
+  (=.),
   (==.),
   insert,
-  repsert,
+  replace,
   selectList,
+  update,
   )
 import Database.Persist.Sql
   (
@@ -58,19 +60,6 @@ import Tempuhs.Server.Spock
   jsonKey,
   )
 
-postUser :: ConnectionPool -> ActionE ()
--- | 'postUser' inserts a new 'User' into the database, or replaces an
--- existing one, from a request.
-postUser p = do
-  u <- maybeParam "user"
-  n <- paramE    "name"
-  runDatabase p $
-    let v = User n Nothing
-    in  liftAE . jsonKey =<< case u of
-      Just i  -> let k = mkKey i
-                 in  repsert k v >> return k
-      Nothing -> insert v
-
 users :: ConnectionPool -> ActionE ()
 -- | 'users' serves a request for a list of 'User's.
 users p = do
@@ -80,6 +69,21 @@ users p = do
                 [UserId   ==. mkKey ui | ui <- toList i]
   runDatabase p $ liftAE . json =<< selectList filters [Asc UserId]
 
+postUser :: ConnectionPool -> ActionE ()
+-- | 'postUser' inserts a 'User'.
+postUser p = do
+  n <- paramE "name"
+  runDatabase p $ liftAE . jsonKey =<< insert (User n Nothing)
+
+replaceUser :: ConnectionPool -> ActionE ()
+-- | 'replaceUser' replaces a 'User'.
+replaceUser p = do
+  u <- paramE "user"
+  n <- paramE "name"
+  runDatabase p $ let k = mkKey u in liftAE . jsonKey =<< do
+    replace k (User n Nothing)
+    return k
+
 deleteUser :: ConnectionPool -> ActionE ()
 -- | 'deleteUser' updates the rubbish field of an existing 'User'.
 deleteUser = nowow "user" UserRubbish
@@ -87,3 +91,12 @@ deleteUser = nowow "user" UserRubbish
 unsafeDeleteUser :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteUser' hard-deletes a 'User' from the database.
 unsafeDeleteUser p = void $ (owow "user" p :: ActionE (Maybe (Key User)))
+
+patchUser :: ConnectionPool -> ActionE ()
+-- | 'patchUser' modifies a 'User'.
+patchUser p = do
+  u <- paramE "user"
+  n <- paramE "name"
+  runDatabase p $ let k = mkKey u in liftAE . jsonKey =<< do
+    update k [UserName =. n]
+    return k

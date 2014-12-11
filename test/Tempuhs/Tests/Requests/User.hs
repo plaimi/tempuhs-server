@@ -43,6 +43,7 @@ import Tempuhs.Spoc.Request
   (
   get,
   post,
+  put,
   )
 import Tempuhs.Tests.Requests.DELETE
   (
@@ -53,23 +54,11 @@ import Tempuhs.Tests.Requests.DELETE
 userSpec :: Spec
 -- | 'userSpec' runs the 'User' 'Spec's.
 userSpec = do
-  postSpec
   getSpec
+  postSpec
+  replaceSpec
   deleteSpec
   purgeSpec
-
-postSpec :: Spec
-postSpec =
-  describe "POST /users" $ do
-    it "inserts a user with key 1"
-      initUser
-    it "won't insert two users with the same name" $ do
-      initUser
-      post  "/users" "name=Luser" >>= assertJSONError 500 "INTERNAL"
-    it "replaces an existing user" $ do
-      initUser
-      post "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
-    itReturnsMissingParam $ post "/users" ""
 
 getSpec :: Spec
 getSpec =
@@ -84,8 +73,25 @@ getSpec =
       get "/users?name=Luser" >>= assertJSONOK [defaultUser]
       get "/users?name=Ruser" >>= assertJSONOK ()
 
+postSpec :: Spec
+postSpec =
+  describe "POST /users" $ do
+    it "inserts a user with key 1"
+      initUser
+    it "won't insert two users with the same name" $ do
+      initUser
+      post  "/users" "name=Luser" >>= assertJSONError 500 "INTERNAL"
+    itReturnsMissingParam $ post "/users" ""
+
+replaceSpec :: Spec
+replaceSpec =
+  describe "PUT /users" $
+    it "replaces an existing user" $ do
+      initUser
+      put "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
+
 deleteSpec :: Spec
-deleteSpec =  rubbishSpec "user" initUser [defaultUser]
+deleteSpec = rubbishSpec "user" initUser [defaultUser]
 
 purgeSpec :: Spec
-purgeSpec =  unsafeRubbishSpec "user" initUser
+purgeSpec = unsafeRubbishSpec "user" initUser

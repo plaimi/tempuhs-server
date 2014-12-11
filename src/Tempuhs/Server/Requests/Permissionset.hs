@@ -23,6 +23,7 @@ import Database.Persist
   SelectOpt (Asc),
   (==.),
   insert,
+  replace,
   selectList,
   update,
   )
@@ -59,33 +60,6 @@ import Tempuhs.Server.Spock
   jsonKey,
   )
 
-postPermissionset :: ConnectionPool -> ActionE ()
--- | 'postPermissionset' inserts a 'Permissionset' into the database, or
--- updates an existing one, from a request.
-postPermissionset p = do
-  ps <- maybeParam "permissionset"
-  runDatabase p $
-    liftAE . jsonKey =<<
-      case ps of
-        Just i -> do
-          let k = mkKey i
-          o   <- liftAE $ maybeParam "own"
-          r   <- liftAE $ maybeParam "read"
-          w   <- liftAE $ maybeParam "write"
-          update (mkKey i) $ concat [PermissionsetOwn      =.. o
-                                    ,PermissionsetRead     =.. r
-                                    ,PermissionsetWrite    =.. w
-                                    ]
-          return k
-        Nothing -> do
-          tid <- liftAE $ paramE "timespan"
-          rid <- liftAE $ paramE "role"
-          o   <- liftAE $ paramE "own"
-          r   <- liftAE $ paramE "read"
-          w   <- liftAE $ paramE "write"
-          return =<< insert $ Permissionset (mkKey tid) (mkKey rid) o r w
-                                            Nothing
-
 permissionsets :: ConnectionPool -> ActionE ()
 -- | 'permissionsets' serves a request for a list of 'Permissionset's.
 permissionsets p = do
@@ -97,13 +71,51 @@ permissionsets p = do
                 [PermissionsetRole     ==. mkKey ri  | ri  <- toList r ]
   runDatabase p $ liftAE . json =<< selectList filters [Asc PermissionsetId]
 
+postPermissionset :: ConnectionPool -> ActionE ()
+-- | 'postPermissionset' inserts a 'Permissionset'.
+postPermissionset p = do
+  tid <- paramE "timespan"
+  rid <- paramE "role"
+  o   <- paramE "own"
+  r   <- paramE "read"
+  w   <- paramE "write"
+  runDatabase p $ let k = mkKey tid in liftAE . jsonKey =<<
+                      insert (Permissionset k (mkKey rid) o r w Nothing)
+
 deletePermissionset :: ConnectionPool -> ActionE ()
 -- | 'deletePermissionset' updates the rubbish field of an existing
 -- 'Permissionset'.
 deletePermissionset = nowow "permissionset" PermissionsetRubbish
+
+replacePermissionset :: ConnectionPool -> ActionE ()
+-- | 'replacePermissionset' replaces a 'Permissionset'.
+replacePermissionset p = do
+  ps  <- paramE "permissionset"
+  tid <- paramE "timespan"
+  rid <- paramE "role"
+  o   <- paramE "own"
+  r   <- paramE "read"
+  w   <- paramE "write"
+  runDatabase p $ let k = mkKey ps in liftAE . jsonKey =<< do
+    replace k (Permissionset (mkKey tid) (mkKey rid) o r w Nothing)
+    return k
 
 unsafeDeletePermissionset :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeletePermissionset' hard-deletes a 'Permissionset' from the
 -- database.
 unsafeDeletePermissionset p =
   void $ (owow "permissionset" p :: ActionE (Maybe (Key Permissionset)))
+
+patchPermissionset :: ConnectionPool -> ActionE ()
+-- | 'patchPermissionset' modifies a 'Permissionset'.
+patchPermissionset p = do
+  ps <- paramE     "permissionset"
+  o  <- maybeParam "own"
+  r  <- maybeParam "read"
+  w  <- maybeParam "write"
+  runDatabase p $ let k = mkKey ps in liftAE . jsonKey =<< do
+    update k (concat [PermissionsetOwn   =.. o
+                     ,PermissionsetRead  =.. r
+                     ,PermissionsetWrite =.. w
+                     ])
+    return k

@@ -1,0 +1,136 @@
+#######
+# GET #
+#######
+
+/timespans
+==========
+Retrieves all timespans of a given clock that overlap the given time period,
+as well as the associated timespan attributes. With no given clock or time
+period, all top-level timespans are retrieved.
+
+The rubbish field is used to retrieve timespans marked as rubbish. It takes
+the timestamp of the earliest date to look for timespans at. The timestamp
+can be formatted in two ways. If you only need day-precision, use YYYY-MM-DD.
+If you additionally want seconds precision, add a 'T', followed by hh-mm-ss.
+
+Although it is possible to specify begin and end without specifying the clock,
+this is generally meaningless.
+
+  id: integer, opitonal -- ID of the timespan
+  parent: integer, optional -- ID of the parent timespan (returns top-level
+                            -- timespans if not given)
+  clock: string, optional -- the name of an existing clock
+  begin: float, optional -- start of time period as read by the clock
+  end: float, optional -- end of time period as read by the clock
+  rubbish: timestamp, optional -- timestamp string for the earliest timespan
+                               -- to retrieve
+  descendants: non-negative integer or "Infinity", optional -- levels of
+                                                            -- descendants
+                                                            -- of the timespan
+                                                            -- (defaults to 0)
+  *_: string -- filter on exact attribute value (can be give multiple times)
+  *_like: string -- filter on part of attribute value using SQL LIKE (can be
+                 -- given multiple times)
+
+Examples:
+---------
+Get all top-level timespans:
+  /timespans
+
+Get all top-level timespans between -30 and -20 on the TT clock:
+  /timespans?begin=-30&end=-20&clock=TT
+
+Get all top-level timespans rubbished since April Fool's, 2015:
+  /timespans?rubbish=2015-04-01
+
+Get all top-level timespans rubbished since 02:34 at April Fool's, 2015:
+  /timespans?rubbish=2015-04-01T02-34-00
+
+Get timespan 42 and all of its descendants:
+  /timespans?id=42&descendants=Infinity
+
+Get timespan 42 and 2 levels of descendants:
+  /timespans?id=42&descendants=2
+
+Get all top-level timespans having a "Title" attribute with value "Xonotic":
+  /timespans?Title_=Xonotic
+
+Get all top-level timespans having a "Title" attribute whose value starts with
+"Xon":
+  /timespans?Title_like="Xon%"
+
+/clocks
+=======
+Retrieve all clocks that match the given criteria.
+  name: string, optional -- the name of a clock
+  id: integer, optional -- the ID of a clock
+
+Examples:
+---------
+Get a list of all clocks:
+  /clocks
+
+Get the clock named "TT", if any:
+  /clocks?name=TT
+
+Get the clock with ID 1, if any:
+  /clocks?id=1
+
+/users
+=======
+Retrieve all users that match the given criteria.
+  name: string, optional -- the name of a user
+  id: integer, optional -- the ID of a user
+
+Examples:
+---------
+Get a list of all users:
+  /users
+
+Get the user named "Luser", if any:
+  /users?name=Luser
+
+Get the user with ID 1, if any:
+  /users?id=1
+
+/roles
+=======
+Retrieve all roles that match the given criteria.
+  name: string, optional -- the name of a role
+  namespace: integer, optional -- the ID of the user whose namespace the role
+                               -- has
+  id: integer, optional -- the ID of a role
+
+Examples:
+---------
+Get a list of all roles:
+  /roles
+
+Get the role named "Rulle", if any:
+  /roles?name=Rulle
+
+Get the Role with ID 1, if any:
+  /roles?id=1
+
+Get the Role with the namespace of the user with ID 902, if any:
+  /roles?namespace=902
+
+/permissionsets
+===============
+Retrieve all permissionsets that match the given criteria.
+  timespan: integer, optional -- ID of a timespan
+  role: integer, optional -- ID of a role
+
+Examples
+--------
+Get a list of all permissionsets:
+  /permissionsets
+
+Get all permissionsets of timespan 1:
+  /permissionsets?timespan=1
+
+Get all permissionsets of role 1:
+  /permissionsets?role=1
+
+Get the permissionset of timespan 1 and role 1:
+  /permissionsets?timespan=1&role=1

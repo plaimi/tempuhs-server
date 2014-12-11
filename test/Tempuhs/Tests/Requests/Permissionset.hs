@@ -11,6 +11,10 @@ Maintainer  :  tempuhs@plaimi.net
   permissionsetSpec,
   ) where
 
+import Control.Monad
+  (
+  forM_,
+  )
 import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LB8
 import Test.Hspec
@@ -43,6 +47,7 @@ import Tempuhs.Spoc.JSON
 import Tempuhs.Spoc.Request
   (
   get,
+  patch,
   post,
   )
 import Tempuhs.Tests.Requests.DELETE
@@ -54,28 +59,11 @@ import Tempuhs.Tests.Requests.DELETE
 permissionsetSpec :: Spec
 -- | 'permissionsetSpec' runs the 'Permissionset' 'Spec's.
 permissionsetSpec = do
-  postSpec
   getSpec
+  postSpec
   deleteSpec
   purgeSpec
-
-postSpec :: Spec
-postSpec =
-  describe "POST /permissionsets" $ do
-    it ("inserts a timespan and role and gives the role all permissions " ++
-        "for the timespan -- the permissionset has key 1")
-      initPermissionset
-    it "won't insert two permissionsets for the same timespan and role" $ do
-      initPermissionset
-      post "/permissionsets" ("timespan=1&role=1&own=True" `LB.append`
-            "&read=True&write=True") >>= assertJSONError 500 "INTERNAL"
-    mapM_ modify ["own", "read", "write"]
-  where modify n =
-          it ("modifies an existing permissionset's " ++ n) $ do
-            initPermissionset
-            post "/permissionsets" ("permissionset=1&" `LB.append` LB8.pack n
-                                 `LB.append` "=False")
-              >>= assertJSONOK (jsonKey 1)
+  patchSpec
 
 getSpec :: Spec
 getSpec =
@@ -94,9 +82,31 @@ getSpec =
       get "/permissionsets?role=1" >>= assertJSONOK [defaultPermissionset]
       get "/permissionsets?role=2" >>= assertJSONOK ()
 
+postSpec :: Spec
+postSpec =
+  describe "POST /permissionsets" $ do
+    it ("inserts a timespan and role and gives the role all permissions " ++
+        "for the timespan -- the permissionset has key 1")
+      initPermissionset
+    it "won't insert two permissionsets for the same timespan and role" $ do
+      initPermissionset
+      post "/permissionsets"
+           "timespan=1&role=1&own=True&read=True&write=True"
+         >>= assertJSONError 500 "INTERNAL"
+
 deleteSpec :: Spec
 deleteSpec = rubbishSpec "permissionset" initPermissionset
                                          [defaultPermissionset]
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "permissionset" initPermissionset
+
+patchSpec :: Spec
+patchSpec =
+  describe "PATCH /permissionsets" $ do
+    forM_ ["own", "read", "write"] $ \ps ->
+          it ("modifies an existing permissionset's " ++ ps) $ do
+            initPermissionset
+            patch "/permissionsets" ("permissionset=1&" `LB.append`
+                                     LB8.pack ps `LB.append` "=False")
+              >>= assertJSONOK (jsonKey 1)

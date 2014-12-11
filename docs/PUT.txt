@@ -1,0 +1,11 @@
+#######
+# PUT #
+#######
+
+/timespans
+/clocks
+/users
+/roles
+===============
+Replace a resource. To perform a HTTP PUT, send the ID of the resource
+("id=n") and the relevant fields per POST.txt.

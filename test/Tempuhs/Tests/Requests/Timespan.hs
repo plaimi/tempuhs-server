@@ -76,7 +76,9 @@ import Tempuhs.Spoc.Request
   buildQuery,
   get,
   getTimespans,
+  patch,
   post,
+  put,
   )
 import Tempuhs.Tests.Requests.DELETE
   (
@@ -87,31 +89,13 @@ import Tempuhs.Tests.Requests.DELETE
 timespanSpec :: Spec
 -- | 'timespanSpec' runs the 'Timespan' 'Spec's.
 timespanSpec = do
-  postSpec
   getSpec
+  postSpec
+  replaceSpec
   deleteSpec
   purgeSpec
+  patchSpec
   attributesSpec
-
-postSpec :: Spec
-postSpec =
-  describe "POST /timespans" $ do
-    forM_ (subsequences . Z.toList $ specifieds) $
-      \ss -> it ("inserts a timespan with key 1 specifying " ++
-                  intercalate "/" ss) $ do
-        initTimespanSpecs (Z.fromList ss)
-        getTimespans (10, 42) >>=
-          assertJSONOK (timespansSpecs (Z.fromList ss))
-    it "successfully inserts a sub-timespan" $ do
-      initDefaultTimespan
-      initSubTimespan 2 1
-    it "successfully inserts a timespan with attributes" $ do
-      initTimespanAttrs attributes
-      getTimespans (10, 42) >>= assertJSONOK (timespansAttrs attributes)
-    it "modifies an existing timespan and its attributes" $ do
-      initModTimespan
-      getTimespans (10, 42) >>= assertJSONOK [modTimespanEntity]
-    itReturnsMissingParam $ post "/timespans" ""
 
 getSpec :: Spec
 getSpec =
@@ -205,26 +189,58 @@ getSpec =
       forM_ (zip pos (repeat defaultTimespans) ++ zip neg (repeat [])) $
         \(a, b) -> get (qs a) >>= assertJSONOK b
 
+postSpec :: Spec
+postSpec =
+  describe "POST /timespans" $ do
+    forM_ (subsequences . Z.toList $ specifieds) $
+      \ss -> it ("inserts a timespan with key 1 specifying " ++
+                  intercalate "/" ss) $ do
+        initTimespanSpecs (Z.fromList ss)
+        getTimespans (10, 42) >>=
+          assertJSONOK (timespansSpecs (Z.fromList ss))
+    it "successfully inserts a sub-timespan" $ do
+      initDefaultTimespan
+      initSubTimespan 2 1
+    it "successfully inserts a timespan with attributes" $ do
+      initTimespanAttrs attributes
+      getTimespans (10, 42) >>= assertJSONOK (timespansAttrs attributes)
+    itReturnsMissingParam $ post "/timespans" ""
+
+replaceSpec :: Spec
+replaceSpec =
+  describe "PUT /timespans" $
+    it "replaces a timespan" $ do
+      initDefaultTimespan
+      put "/timespans" "?timespan=1&clock=TT&beginMin=10.0"
+        >>= assertJSONOK (jsonKey 1)
+
 deleteSpec :: Spec
 deleteSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "timespan" initDefaultTimespan
 
+patchSpec :: Spec
+patchSpec =
+  describe "PATCH /timespans" $ do
+    it "modifies an existing timespan and its attributes" $ do
+      initModTimespan
+      getTimespans (10, 42) >>= assertJSONOK [modTimespanEntity]
+
 attributesSpec :: Spec
 attributesSpec =
-  describe "POST /attributes" $ do
+  describe "PATCH /attributes" $ do
     it "inserts a timespan attribute with key 1"
       initAttribute
     it "modifies an existing timespan attribute" $ do
       initAttribute
-      post "/attributes" "timespan=1&key=title&value=new" >>=
+      patch "/attributes" "timespan=1&key=title&value=new" >>=
         assertJSONOK (jsonKey 1)
       getTimespans (10, 42) >>=
         assertJSONOK (timespansSpecsAttrs specifieds [("title", "new")])
     it "deletes an existing timespan attribute" $ do
       initAttribute
-      post "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
+      patch "/attributes" "timespan=1&key=title" >>= assertJSONOK jsonSuccess
       getTimespans (10, 42) >>=
         assertJSONOK [(timespanEntity specifieds, [] :: [()])]
-    itReturnsMissingParam $ post "/attributes" ""
+    itReturnsMissingParam $ patch "/attributes" ""

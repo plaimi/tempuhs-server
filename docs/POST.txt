@@ -1,0 +1,83 @@
+########
+# POST #
+########
+/timespans
+==========
+Insert a timespan.
+  parent: integer, optional -- ID of the parent timespan if any
+  clock: string -- the name of an existing clock
+  beginMin: float -- lowest estimate of start time
+  beginMax: float, optional -- highest estimate of start time
+  endMin: float, optional -- lowest estimate of end time
+  endMax: float, optional -- highest estimate of end time
+  weight: float, default 1 -- general factor for determining the
+                           -- importance/relevance of a timespan
+  *_: string -- anything that ends with a '_' is considered an attribute. See
+                the examples for more information.
+
+Fields marked optional (or default) may be omitted. If endMax is specified but
+not endMin, they will be the same. If all three optional values are omitted,
+all points in time will be equal.
+
+Examples
+---------
+Post timespan that begins at -3/-2, and ends at 1/4, with the TT clock:
+  beginMin=-3.0&beginMax=-2.0&endMin=1.0&endMax=4.0&clock=TT
+
+Post timespan that begins at 5, and ends at 6, with the TT clock:
+  beginMin=5.0&endMax=6.0&clock=TT
+
+Post timespan at 5 with the TT clock:
+  beginMin=5.0&clock=TT
+
+Post timespan that begins at 5 with the TT clock, with attributes "foo" =
+"fu", and "bar" = "baz":
+  beginMin=5.0&clock=TT&foo_=fu&bar_=baz
+
+/clocks
+=======
+Insert a new clock.
+  name: string -- name used to identify the clock
+
+Examples
+--------
+Add the Julian Day Number system as a clock:
+  name=JDN
+
+/users
+=======
+Insert a new user.
+  name: string -- name used to identify the user
+
+Examples
+--------
+Add the Luser user:
+  name=Luser
+
+/roles
+=======
+Insert a new role.
+
+  name: string -- name used to identify the role
+  namespace: integer -- ID of the user whose name becomes the role's namespace
+
+Examples
+--------
+Add the Rulle role with the namespace of the username of the user with ID 902:
+  name=Rulle&namespace=902
+
+/permissionsets
+===============
+Inserts a new permissionset.
+
+  timespan: integer -- ID of the permissionset's timespan
+  role: integer -- ID of the permissionset's role
+  own: bool -- whether the role has own rights to the timespan
+  read: bool -- whether the role has read rights to the timespan
+  write: bool -- whether the role has write rights to the timespan
+  share: bool -- whether the role has share rights to the timespan
+
+Examples
+--------
+Add a permissionset that says that role 1 has all rights for timespan 1:
+  timespan=1&role=1&own=True&read=True&write=True&share=True

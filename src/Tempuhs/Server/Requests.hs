@@ -18,34 +18,43 @@ import Web.Scotty.Trans
   (
   delete,
   get,
+  patch,
   post,
+  put,
   )
 
 import Tempuhs.Server.Requests.Clock
   (
   clocks,
+  patchClock,
   postClock,
+  replaceClock,
   unsafeDeleteClock,
   )
 import Tempuhs.Server.Requests.Permissionset
   (
-  permissionsets,
   deletePermissionset,
+  patchPermissionset,
+  permissionsets,
   postPermissionset,
   unsafeDeletePermissionset,
   )
 import Tempuhs.Server.Requests.Role
   (
-  roles,
   deleteRole,
+  patchRole,
   postRole,
+  replaceRole,
+  roles,
   unsafeDeleteRole,
   )
 import Tempuhs.Server.Requests.Timespan
   (
   deleteTimespan,
-  postAttribute,
+  patchAttribute,
+  patchTimespan,
   postTimespan,
+  replaceTimespan,
   timespans,
   unsafeDeleteTimespan,
   )
@@ -53,7 +62,9 @@ import Tempuhs.Server.Requests.User
   (
   users,
   deleteUser,
+  patchUser,
   postUser,
+  replaceUser,
   unsafeDeleteUser,
   )
 import Tempuhs.Server.Spock
@@ -64,35 +75,44 @@ import Tempuhs.Server.Spock
 
 clockRequests :: ConnectionPool -> ScottyE ()
 clockRequests p = do
-  get  "/clocks"         $ clocks            p
-  post "/clocks"         $ postClock         p
+  get    "/clocks"       $ clocks            p
+  post   "/clocks"       $ postClock         p
+  put    "/clocks"       $ replaceClock      p
   delete "/clocks/purge" $ unsafeDeleteClock p
+  patch  "/clocks"       $ patchClock        p
 
 permissionsetRequests :: ConnectionPool -> ScottyE ()
 permissionsetRequests p = do
-  post   "/permissionsets"       $ postPermissionset         p
   get    "/permissionsets"       $ permissionsets            p
+  post   "/permissionsets"       $ postPermissionset         p
   delete "/permissionsets"       $ deletePermissionset       p
   delete "/permissionsets/purge" $ unsafeDeletePermissionset p
+  patch  "/permissionsets"       $ patchPermissionset        p
 
 roleRequests :: ConnectionPool -> ScottyE ()
 roleRequests p = do
-  post   "/roles"       $ postRole         p
   get    "/roles"       $ roles            p
+  post   "/roles"       $ postRole         p
+  put    "/roles"       $ replaceRole      p
   delete "/roles"       $ deleteRole       p
   delete "/roles/purge" $ unsafeDeleteRole p
+  patch  "/roles"       $ patchRole        p
 
 timespanRequests :: ConnectionPool -> ScottyE ()
 timespanRequests p = do
-  post   "/timespans"        $ postTimespan         p
   get    "/timespans"        $ timespans            p
+  post   "/timespans"        $ postTimespan         p
+  put    "/timespans"        $ replaceTimespan      p
   delete "/timespans"        $ deleteTimespan       p
   delete "/timespans/purge"  $ unsafeDeleteTimespan p
-  post   "/attributes"       $ postAttribute        p
+  patch  "/timespans"        $ patchTimespan        p
+  patch  "/attributes"       $ patchAttribute       p
 
 userRequests :: ConnectionPool -> ScottyE ()
 userRequests p = do
-  post   "/users"       $ postUser         p
   get    "/users"       $ users            p
+  post   "/users"       $ postUser         p
+  put    "/users"       $ replaceUser      p
   delete "/users"       $ deleteUser       p
   delete "/users/purge" $ unsafeDeleteUser p
+  patch  "/users"       $ patchUser        p

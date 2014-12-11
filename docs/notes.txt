@@ -1,0 +1,6 @@
+#########
+# NOTES #
+#########
+
+TT means terrestrial time:
+  <https://en.wikipedia.org/wiki/Terrestrial_time>.

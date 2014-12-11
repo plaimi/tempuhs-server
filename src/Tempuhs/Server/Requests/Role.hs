@@ -27,6 +27,7 @@ import Database.Persist
   SelectOpt (Asc),
   (==.),
   insert,
+  replace,
   selectList,
   update,
   )
@@ -63,27 +64,6 @@ import Tempuhs.Server.Spock
   jsonKey,
   )
 
-postRole :: ConnectionPool -> ActionE ()
--- | 'postRole' inserts a new 'Role' into the database, or updates an
--- existing one, from a request.
-postRole p = do
-  r <- maybeParam "role"
-  runDatabase p $
-    liftAE . jsonKey =<<
-      case r of
-        Just i -> do
-          let k = mkKey i
-          n  <- liftAE $ maybeParam "name"
-          ns <- liftAE $ maybeParam "namespace"
-          update (mkKey i) $ concat [RoleName      =.. n
-                                    ,RoleNamespace =.. (mkKey <$> ns)
-                                    ]
-          return k
-        Nothing -> do
-          n  <- liftAE $ paramE "name"
-          ns <- liftAE $ paramE "namespace"
-          return =<< insert $ Role n (mkKey ns) Nothing
-
 roles :: ConnectionPool -> ActionE ()
 -- | 'roles' serves a request for a list of 'Role's.
 roles p = do
@@ -95,6 +75,23 @@ roles p = do
                 [RoleId        ==. mkKey ri | ri <- toList r]
   runDatabase p $ liftAE . json =<< selectList filters [Asc RoleId]
 
+postRole :: ConnectionPool -> ActionE ()
+-- | 'postRole' inserts a new 'Role'.
+postRole p = do
+  n  <- paramE "name"
+  ns <- paramE "namespace"
+  runDatabase p $ liftAE . jsonKey =<< insert (Role n (mkKey ns) Nothing)
+
+replaceRole :: ConnectionPool -> ActionE ()
+-- | 'replaceRole' replaces a 'Role'.
+replaceRole p = do
+  r  <- paramE "role"
+  n  <- paramE "name"
+  ns <- paramE "namespace"
+  runDatabase p $ let k = mkKey r in liftAE . jsonKey =<< do
+    replace k (Role n (mkKey ns) Nothing)
+    return k
+
 deleteRole :: ConnectionPool -> ActionE ()
 -- | 'deleteRole' updates the rubbish field of an existing 'Role'.
 deleteRole = nowow "role" RoleRubbish
@@ -102,3 +99,15 @@ deleteRole = nowow "role" RoleRubbish
 unsafeDeleteRole :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteRole' hard-deletes a 'Role' from the database.
 unsafeDeleteRole p = void $ (owow "role" p :: ActionE (Maybe (Key Role)))
+
+patchRole :: ConnectionPool -> ActionE ()
+-- | 'patchRole' modifies a 'Role'.
+patchRole p = do
+  r  <- paramE     "role"
+  n  <- maybeParam "name"
+  ns <- maybeParam "namespace"
+  runDatabase p $ let k = mkKey r in liftAE . jsonKey =<< do
+    update k (concat [RoleName      =.. n
+                     ,RoleNamespace =.. (mkKey <$> ns)
+                     ])
+    return k

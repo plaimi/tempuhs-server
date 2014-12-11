@@ -21,9 +21,11 @@ import Database.Persist
   (
   Key,
   SelectOpt (Asc),
+  (=.),
   (==.),
   insert,
-  repsert,
+  replace,
+  update,
   selectList,
   )
 import Database.Persist.Sql
@@ -57,19 +59,6 @@ import Tempuhs.Server.Spock
   jsonKey,
   )
 
-postClock :: ConnectionPool -> ActionE ()
--- | 'postClock' inserts a new 'Clock' into the database, or updates an
--- existing one, from a request.
-postClock p = do
-  c <- maybeParam "clock"
-  n <- paramE     "name"
-  runDatabase p $
-    let d = Clock n Nothing
-    in  liftAE . jsonKey =<< case c of
-      Just i  -> let k = mkKey i
-                 in  repsert k d >> return k
-      Nothing -> insert d
-
 clocks :: ConnectionPool -> ActionE ()
 -- | 'clocks' serves a request for a list of 'Clock's.
 clocks p = do
@@ -79,6 +68,30 @@ clocks p = do
                 [ClockId   ==. mkKey ci | ci <- toList i]
   runDatabase p $ liftAE . json =<< selectList filters [Asc ClockId]
 
+postClock :: ConnectionPool -> ActionE ()
+-- | 'postClock' inserts a 'Clock'.
+postClock p = do
+  n <- paramE "name"
+  runDatabase p $ liftAE . jsonKey =<< insert (Clock n Nothing)
+
+replaceClock :: ConnectionPool -> ActionE ()
+-- | 'replaceClock' replaces a 'Clock'.
+replaceClock p = do
+  c <- paramE "clock"
+  n <- paramE "name"
+  runDatabase p $ let k = mkKey c in liftAE . jsonKey =<< do
+    replace k (Clock n Nothing)
+    return k
+
 unsafeDeleteClock :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Clock' from the database.
 unsafeDeleteClock p = void $ (owow "clock" p :: ActionE (Maybe (Key Clock)))
+
+patchClock :: ConnectionPool -> ActionE ()
+-- | 'patchClock' modifies a 'Clock'.
+patchClock p = do
+  c <- paramE "clock"
+  n <- paramE "name"
+  void $ runDatabase p $ let k = mkKey c in liftAE . jsonKey =<< do
+    update k [ClockName =. n]
+    return k

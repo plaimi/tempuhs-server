@@ -33,6 +33,7 @@ import Tempuhs.Spoc.JSON
 import Tempuhs.Spoc.Request
   (
   buildQueryL,
+  patch,
   post,
   )
 import Tempuhs.Spoc.Type
@@ -79,7 +80,7 @@ initModTimespan :: Session ()
 -- and checks the response.
 initModTimespan =
   initDefaultTimespan >>
-    post "/timespans" body >>= assertJSONOK (jsonKey 1)
+    patch "/timespans" body >>= assertJSONOK (jsonKey 1)
   where
     body = L.append "timespan=1&beginMin=0.0&" $ buildQueryL attributes
 
@@ -95,7 +96,7 @@ initAttribute :: Session ()
 -- attribute and checks the response.
 initAttribute =
   initTimespanSpecs specifieds >>
-    post "/attributes" body >>= assertJSONOK (jsonKey 1)
+    patch "/attributes" body >>= assertJSONOK (jsonKey 1)
   where body = "timespan=1&key=title&value=test"
 
 initUser :: Session ()

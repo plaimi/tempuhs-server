@@ -1,0 +1,38 @@
+##########
+# DELETE #
+##########
+
+/timespans
+/roles
+/users
+/permissionsets
+/timespans/purge
+/clocks/purge
+/roles/purge
+/users/purge
+/permissionsets/purge
+=====================
+
+Rubbishes a row. Pass in the name of the table in singular form + the ID of
+the row you want to delete.
+
+N.B. /purge does a *hard delete*. This means it will *delete* the row from the
+database. Usually you will likely want to use the other requests, which only
+marks the row as deleted by setting its rubbish field to a timestamp of when
+it was deleted.
+
+Examples
+--------
+Rubbish the timespan with ID 1:
+/timespans/timespan=1
+
+Rubbish the role with ID 2:
+/roles/role=2
+
+Rubbishing other things and IDs is left as an exercise for the frontend
+engineer...
+
+*Really* delete the timespan with ID 1:
+/timespans/purge?timespan=1
+
+Something something exercise for the frontend engineer.
