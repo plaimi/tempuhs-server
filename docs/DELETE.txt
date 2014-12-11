@@ -14,7 +14,7 @@
 /permissionsets/purge
 =====================
 
-Rubbishes a row. Pass in the name of the table in singular form + the ID of
+Rubbish a row. Pass in the name of the table in singular form + the ID of
 the row you want to delete.
 
 N.B. /purge does a *hard delete*. This means it will *delete* the row from the

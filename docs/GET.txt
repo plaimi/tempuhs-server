@@ -4,7 +4,7 @@
 
 /timespans
 ==========
-Retrieves all timespans of a given clock that overlap the given time period,
+Retrieve all timespans of a given clock that overlap the given time period,
 as well as the associated timespan attributes. With no given clock or time
 period, all top-level timespans are retrieved.
 
