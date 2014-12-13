@@ -9,10 +9,6 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.User where
 
-import Control.Monad
-  (
-  void,
-  )
 import Data.Foldable
   (
   toList,
@@ -35,7 +31,6 @@ import Database.Esqueleto
   )
 import Database.Persist
   (
-  Key,
   (=.),
   insert,
   replace,
@@ -132,7 +127,7 @@ deleteUser = nowow "user" UserRubbish
 
 unsafeDeleteUser :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteUser' hard-deletes a 'User' from the database.
-unsafeDeleteUser p = void (owow "user" p :: ActionE (Maybe (Key User)))
+unsafeDeleteUser = owow "user" userRubbish
 
 patchUser :: ConnectionPool -> ActionE ()
 -- | 'patchUser' modifies a 'User'.

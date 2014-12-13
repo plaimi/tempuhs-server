@@ -19,7 +19,6 @@ import Data.Foldable
   )
 import Database.Persist
   (
-  Key,
   SelectOpt (Asc),
   (=.),
   (==.),
@@ -90,7 +89,7 @@ deleteClock = nowow "clock" ClockRubbish
 
 unsafeDeleteClock :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Clock' from the database.
-unsafeDeleteClock p = void $ (owow "clock" p :: ActionE (Maybe (Key Clock)))
+unsafeDeleteClock = owow "clock" clockRubbish
 
 patchClock :: ConnectionPool -> ActionE ()
 -- | 'patchClock' modifies a 'Clock'.

@@ -38,7 +38,6 @@ import Database.Persist
 import Database.Persist.Class
   (
   EntityField,
-  Key,
   PersistEntity,
   PersistEntityBackend,
   )
@@ -82,16 +81,19 @@ nowow p f c =
         Just _  -> return <$> (update k [f =. Just now] >> liftAE jsonSuccess)
         Nothing -> return Nothing
 
-owow :: (PersistEntity a, PersistEntityBackend a ~ SqlBackend)
-     => Text -> ConnectionPool -> ActionE (Maybe (Key a))
--- | 'owow' takes a parametre to look up. If the row exists, it inflicts owow
--- in the form of *hard deleting* the row. If it doesn't exist, an error on
--- the parametre is raised per 'withParam'.
-owow p c =
-  withParam p $ \r -> runDatabase c $ do
-    let k = mkKey r
+owow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
+     => Text -> (v -> Maybe UTCTime) -> ConnectionPool
+     -> ActionE ()
+-- | 'owow' takes a parametre to look up in a 'ConnectionPool', and a function
+-- to retrieve the rubbish field of the resource looked up with the parametre.
+-- The resource is then deleted if it is rubbish per the passed in rubbish
+-- field function. It inflicts owow in the form of *hard deleting* the row. If
+-- it doesn't exist, or isn't rubbish, an error on the parametre is raised per
+-- 'withParam'.
+owow p f c =
+  withParam p $ \q -> runDatabase c $ do
+    let k = mkKey q
     mr <- get k
-    case mr of
-      Just _  -> return <$> (delete k >> liftAE jsonSuccess >>
-                             return (Just k))
-      Nothing -> return Nothing
+    case f <$> mr of
+      Just (Just _) -> return <$> (delete k >> liftAE jsonSuccess)
+      _             -> return Nothing

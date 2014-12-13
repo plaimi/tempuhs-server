@@ -9,17 +9,12 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Permissionset where
 
-import Control.Monad
-  (
-  void,
-  )
 import Data.Foldable
   (
   toList,
   )
 import Database.Persist
   (
-  Key,
   SelectOpt (Asc),
   (==.),
   insert,
@@ -82,11 +77,6 @@ postPermissionset p = do
   runDatabase p $ let k = mkKey tid in liftAE . jsonKey =<<
                       insert (Permissionset k (mkKey rid) o r w Nothing)
 
-deletePermissionset :: ConnectionPool -> ActionE ()
--- | 'deletePermissionset' updates the rubbish field of an existing
--- 'Permissionset'.
-deletePermissionset = nowow "permissionset" PermissionsetRubbish
-
 replacePermissionset :: ConnectionPool -> ActionE ()
 -- | 'replacePermissionset' replaces a 'Permissionset'.
 replacePermissionset p = do
@@ -100,11 +90,15 @@ replacePermissionset p = do
     replace k (Permissionset (mkKey tid) (mkKey rid) o r w Nothing)
     return k
 
+deletePermissionset :: ConnectionPool -> ActionE ()
+-- | 'deletePermissionset' updates the rubbish field of an existing
+-- 'Permissionset'.
+deletePermissionset = nowow "permissionset" PermissionsetRubbish
+
 unsafeDeletePermissionset :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeletePermissionset' hard-deletes a 'Permissionset' from the
 -- database.
-unsafeDeletePermissionset p =
-  void $ (owow "permissionset" p :: ActionE (Maybe (Key Permissionset)))
+unsafeDeletePermissionset = owow "permissionset" permissionsetRubbish
 
 patchPermissionset :: ConnectionPool -> ActionE ()
 -- | 'patchPermissionset' modifies a 'Permissionset'.

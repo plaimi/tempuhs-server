@@ -18,9 +18,7 @@ Rubbishes a row. Pass in the name of the table in singular form + the ID of
 the row you want to delete.
 
 N.B. /purge does a *hard delete*. This means it will *delete* the row from the
-database. Usually you will likely want to use the other requests, which only
-marks the row as deleted by setting its rubbish field to a timestamp of when
-it was deleted.
+database. A purge is only possible on a rubbished resource.
 
 Examples
 --------

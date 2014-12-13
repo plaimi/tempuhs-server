@@ -29,6 +29,7 @@ import Data.Time.Clock
 import Network.Wai.Test
   (
   Session,
+  SResponse,
   )
 import Test.Hspec
   (
@@ -43,6 +44,7 @@ import Tempuhs.Spoc
 import Tempuhs.Spoc.Assert
   (
   assertJSON,
+  assertJSONError,
   assertJSONOK,
   assertStatus,
   )
@@ -63,26 +65,32 @@ import Tempuhs.Spoc.Request
 
 import Tempuhs.Chronology
 
+
+du :: String -> String -> Session SResponse
+du f s = delete (pack $ "/" ++ f ++ "s" ++ s ++ f ++ "=1")
+
+ru :: String -> Session SResponse
+ru = flip du "?"
+
+pu :: String -> Session SResponse
+pu = flip du "/purge?"
+
 rubbishSpec :: (HasRubbish d (Maybe UTCTime), FromJSON d, ToJSON d)
             => String -> Session () -> [d] -> Spec
 rubbishSpec f i d =
   describe ("DELETE /" ++ f ++ "s") $ do
-    it ("rubbishes a " ++ f) initDelete
+    it ("rubbishes a " ++ f) $ i >> ru f >>= assertJSONOK jsonSuccess
     it ("returns the rubbished " ++ f) $ do
-      initDelete
+      i >> ru f >>= assertJSONOK jsonSuccess
       get (pack $ "/" ++ f ++ "s?rubbish=2000-01-01") >>= \r -> do
         assertStatus 200 r
         assertJSON ("a rubbished version of: " ++ showJSON d) r (d =^=)
-  where
-    initDelete = i >> delete (pack $ "/" ++ f ++ "s?" ++ f ++ "=1")
-                   >>= assertJSONOK jsonSuccess
 
-unsafeRubbishSpec :: String -> Session () -> Spec
+unsafeRubbishSpec :: [Char] -> Session a -> Spec
 unsafeRubbishSpec f i =
   describe ("DELETE /" ++ f ++ "s/purge") $ do
-    it ("purges a " ++ f) initDelete
+    it "initially returns []" $ get (pack $ f ++ "s") >>= assertJSONOK ()
+    it ("refuses to purge a non-rubbish " ++ f) $
+      i >> pu f >>= assertJSONError 400 "INVALID_PARAM"
+    it ("purges a " ++ f) $ i >> ru f >> pu f >>= assertJSONOK jsonSuccess
     it "returns []" $ get (pack $ f ++ "s") >>= assertJSONOK ()
-  where
-    initDelete = i >>
-                 delete (pack $ "/" ++ f ++ "s/purge?"
-                                    ++ f ++ "=1") >>= assertJSONOK jsonSuccess

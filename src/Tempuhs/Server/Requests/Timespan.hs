@@ -9,10 +9,6 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Timespan where
 
-import Control.Monad
-  (
-  void,
-  )
 import qualified Database.Esqueleto as E
 import Database.Esqueleto
   (
@@ -28,7 +24,6 @@ import Data.Functor
   )
 import Database.Persist
   (
-  Key (Key),
   entityKey,
   insert,
   replace,
@@ -156,8 +151,7 @@ deleteTimespan = nowow "timespan" TimespanRubbish
 
 unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
-unsafeDeleteTimespan p =
-  void (owow "timespan" p :: ActionE (Maybe (Key Timespan)))
+unsafeDeleteTimespan = owow "timespan" timespanRubbish
 
 patchTimespan :: ConnectionPool -> ActionE ()
 -- | 'patchTimespan' modifies a 'Timespan'.
