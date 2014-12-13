@@ -65,10 +65,10 @@ import Tempuhs.Server.Spock
   )
 
 nowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
-       => Text
-       -> EntityField v (Maybe UTCTime)
-       -> ConnectionPool
-       -> ActionE ()
+      => Text
+      -> EntityField v (Maybe UTCTime)
+      -> ConnectionPool
+      -> ActionE ()
 -- | 'nowow' takes a parametre to look up. If the row exists, it sets the
 -- passed in field to 'getCurrentTime'. If not, an error on the parametre is
 -- raised per 'withParam'.
