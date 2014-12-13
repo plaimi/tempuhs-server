@@ -54,6 +54,11 @@ import Tempuhs.Server.DELETE
   nowow,
   owow,
   )
+import Tempuhs.Server.Laws.Timespan
+  (
+  flexTimespan,
+  parentCycle,
+  )
 import Tempuhs.Server.Param
   (
   defaultParam,
@@ -85,6 +90,9 @@ import Tempuhs.Server.Requests.Timespan.Util
 import Tempuhs.Server.Spock
   (
   ActionE,
+  errInternal,
+  errInvalidParam,
+  jsonError,
   jsonKey,
   )
 
@@ -127,6 +135,7 @@ postTimespan pool = do
     tid <- insert $ Timespan (mkKey <$> p) (entityKey c)
                              bMin bMax eMin eMax w r
     insertAttributes TimespanAttribute as tid
+    flexTimespan tid
     return tid
 
 replaceTimespan :: ConnectionPool -> ActionE ()
@@ -138,16 +147,28 @@ replaceTimespan pool = do
   w                             <- defaultParam 1 "weight"
   r                             <- return Nothing
   as                            <- attributesParams
-  runDatabase pool $ liftAE . jsonKey =<< do
-    c      <- clockParam "clock"
+  runDatabase pool $ do
     let tid = mkKey t
-    replace tid $ Timespan (mkKey <$> p) (entityKey c) bMin bMax eMin eMax w r
-    insertAttributes TimespanAttribute as tid
-    return tid
+        q   = mkKey <$> p
+    c     <- clockParam "clock"
+    pCycle <- case q of
+                Just qq -> parentCycle [tid] qq
+                _       -> return $ Just False
+    case pCycle of
+      Just False -> do
+        replace tid $ Timespan q (entityKey c) bMin bMax eMin eMax w r
+        insertAttributes TimespanAttribute as tid
+        flexTimespan tid
+        liftAE $ jsonKey tid
+      Just True -> liftAE $ jsonError $ errInvalidParam "parent: cycle"
+      Nothing   -> liftAE $ jsonError $ errInternal "database inconsistency"
 
 deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
-deleteTimespan = nowow "timespan" TimespanRubbish
+deleteTimespan p = do
+  t <- paramE "timespan"
+  runDatabase p $ let k = mkKey t in flexTimespan k
+  nowow "timespan" TimespanRubbish p
 
 unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
@@ -164,19 +185,29 @@ patchTimespan pool = do
   eMax   <- maybeParam "endMax"
   w      <- maybeParam "weight"
   as     <- attributesParams
-  runDatabase pool $ liftAE . jsonKey =<< do
+  runDatabase pool $ do
     c <- liftAE . rescueMissing =<< erretreat (clockParam "clock")
     let k = mkKey t
-    update k $ concat [TimespanParent   =.. (fmap mkKey . maybeUnwrap <$> p)
-                      ,TimespanClock    =.. (entityKey <$> c)
-                      ,TimespanBeginMin =.. bMin
-                      ,TimespanBeginMax =.. bMax
-                      ,TimespanEndMin   =.. eMin
-                      ,TimespanEndMax   =.. eMax
-                      ,TimespanWeight   =.. w
-                      ]
-    updateTimespanAttributes k as
-    return k
+        q = fmap mkKey . maybeUnwrap <$> p
+    pcycle <- case q of
+                Just (Just r) -> parentCycle [k] r
+                _             -> return $ Just False
+    case pcycle of
+       Just False -> do
+         update k $ concat
+           [TimespanParent   =.. q
+           ,TimespanClock    =.. (entityKey <$> c)
+           ,TimespanBeginMin =.. bMin
+           ,TimespanBeginMax =.. bMax
+           ,TimespanEndMin   =.. eMin
+           ,TimespanEndMax   =.. eMax
+           ,TimespanWeight   =.. w
+           ]
+         updateTimespanAttributes k as
+         flexTimespan k
+         liftAE $ jsonKey k
+       Just True -> liftAE $ jsonError $ errInvalidParam "parent: cycle"
+       Nothing   -> liftAE $ jsonError $ errInternal "database inconsistency"
 
 patchTimespanAttribute :: ConnectionPool -> ActionE ()
 -- | 'patchTimespanAttribute' sets or removes a 'TimespanAttribute'.

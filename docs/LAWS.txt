@@ -1,0 +1,21 @@
+########
+# LAWS #
+########
+
+FlexLaws
+========
+1. A timespan with a clock with a name of "<~>" is a flexible timespan and
+subject to the laws of this section.
+
+2. A flexible timespan's beginMin is equal to the smallest beginMin of all of
+its immediate descendants' beginMin.
+
+3. A flexible timespan's endMax is equal to the biggest endMax of all of its
+immediate descendants' endMax.
+
+
+ParentLaws
+==========
+1. A timespan may not have a descendant as a parent.
+
+2. A timespan may not have itself as a parent.
