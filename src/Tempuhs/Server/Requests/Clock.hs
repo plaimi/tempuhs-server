@@ -46,6 +46,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.DELETE
   (
+  nowow,
   owow,
   )
 import Tempuhs.Server.Param
@@ -82,6 +83,10 @@ replaceClock p = do
   runDatabase p $ let k = mkKey c in liftAE . jsonKey =<< do
     replace k (Clock n Nothing)
     return k
+
+deleteClock :: ConnectionPool -> ActionE ()
+-- | 'deleteClock' updates the rubbish field of an existing 'Clock'.
+deleteClock = nowow "clock" ClockRubbish
 
 unsafeDeleteClock :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Clock' from the database.

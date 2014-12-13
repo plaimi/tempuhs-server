@@ -3,6 +3,7 @@
 ##########
 
 /timespans
+/clocks
 /roles
 /users
 /permissionsets

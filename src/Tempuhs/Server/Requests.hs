@@ -26,6 +26,7 @@ import Web.Scotty.Trans
 import Tempuhs.Server.Requests.Clock
   (
   clocks,
+  deleteClock,
   patchClock,
   postClock,
   replaceClock,
@@ -79,6 +80,7 @@ clockRequests p = do
   get    "/clocks"       $ clocks            p
   post   "/clocks"       $ postClock         p
   put    "/clocks"       $ replaceClock      p
+  delete "/clocks"       $ deleteClock       p
   delete "/clocks/purge" $ unsafeDeleteClock p
   patch  "/clocks"       $ patchClock        p
 

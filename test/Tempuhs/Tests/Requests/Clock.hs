@@ -48,6 +48,7 @@ import Tempuhs.Spoc.Request
   )
 import Tempuhs.Tests.Requests.DELETE
   (
+  rubbishSpec,
   unsafeRubbishSpec,
   )
 
@@ -57,6 +58,7 @@ clockSpec = do
   getSpec
   postSpec
   replaceSpec
+  deleteSpec
   purgeSpec
   patchSpec
 
@@ -93,6 +95,9 @@ replaceSpec =
     it "replaces an existing clock" $ do
       initClock
       put "/clocks" "clock=1&name=TT2" >>= assertJSONOK (jsonKey 1)
+
+deleteSpec :: Spec
+deleteSpec = rubbishSpec "clock" initClock [defaultClock]
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "clock" initClock
