@@ -68,17 +68,6 @@ flexTimespan t = void . runMaybeT $ do
   c <- MaybeT $ get (timespanClock u)
   when (isFlexProp c) $ lift $ fixFlex t
 
-flexParent :: forall (m :: * -> *). (MonadIO m, Functor m)
-           => Key Timespan -> ReaderT SqlBackend m ()
--- | 'flexParent' takes a 'Key Timespan' and makes sure that its parent, is
--- respecting the FlexLaws (see /docs/LAWS.txt).
-flexParent t = void . runMaybeT $ do
-  u <- MaybeT $ get t
-  p <- MaybeT . return $ timespanParent u
-  r <- MaybeT $ get p
-  c <- MaybeT $ get (timespanClock r)
-  when (isFlexProp c) $ lift $ fixFlex p
-
 fixFlex :: forall (m :: * -> *). (MonadIO m, Functor m)
         => Key Timespan -> ReaderT SqlBackend m ()
 -- | 'fixFlex' makes sure the 'Timespan' with the passed in 'Key Timespan'
@@ -97,6 +86,17 @@ flexPerChildren _ []  = return ()
 flexPerChildren t ds  = update t [TimespanBeginMin =. b, TimespanEndMax =. e]
   where (b, e) = (beginMinProp ds
                  ,endMaxProp ds)
+
+flexParent :: forall (m :: * -> *). (MonadIO m, Functor m)
+           => Key Timespan -> ReaderT SqlBackend m ()
+-- | 'flexParent' takes a 'Key Timespan' and makes sure that its parent, is
+-- respecting the FlexLaws (see /docs/LAWS.txt).
+flexParent t = void . runMaybeT $ do
+  u <- MaybeT $ get t
+  p <- MaybeT . return $ timespanParent u
+  r <- MaybeT $ get p
+  c <- MaybeT $ get (timespanClock r)
+  when (isFlexProp c) $ lift $ fixFlex p
 
 parentCycle :: forall (m :: * -> *). MonadIO m
             => [Key Timespan]
