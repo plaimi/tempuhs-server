@@ -54,7 +54,7 @@ endMaxTest ems =
   where f em = Timespan Nothing (mkKey 1) 0 0 0 em 0 Nothing
 
 notDescParentTest :: Integer -> [NonNegative Integer] -> Property
-notDescParentTest t ps = not (t `elem` qs) === parentCycleProp t qs
+notDescParentTest t ps = notElem t qs === parentCycleProp t qs
   where qs = map getNonNegative ps
 
 notSelfParentTest :: NonNegative Integer -> Property
