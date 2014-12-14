@@ -118,6 +118,7 @@ test-suite prop
                        Tempuhs.Props.Timespan.Laws
                        Tempuhs.Props.Timespan.Props
   other-extensions:    FlexibleContexts
+                       OverloadedStrings
   build-depends:       base >=4.6 && <4.8,
                        persistent >=2.1 && <2.2,
                        QuickCheck >=2.7 && <2.8,
