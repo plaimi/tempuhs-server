@@ -32,6 +32,7 @@ parentLaws = [testGroup "ParentLaws"
 
 flexLaws :: [Test]
 flexLaws = [testGroup "FlexLaws"
-             [testProperty isFlexLaw isFlexTest
+             [testProperty isFlexibleLaw isFlexibleTest
+             ,testProperty isFlexLaw isFlexTest
              ,testProperty beginMinLaw beginMinTest
              ,testProperty endMaxLaw endMaxTest]]

@@ -1,3 +1,4 @@
+{-# LANGUAGE    FlexibleInstances  #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 {- |
@@ -14,13 +15,32 @@ import Control.Applicative
   (<$>),
   (<*>),
   )
+import Database.Persist
+  (
+  Key,
+  )
 import Test.QuickCheck
   (
   Arbitrary,
   arbitrary,
   )
 import Test.QuickCheck.Instances ()
+
 import Tempuhs.Chronology
+import Tempuhs.Server.Database
+  (
+  mkKey,
+  )
 
 instance Arbitrary Clock where
   arbitrary = Clock <$> arbitrary <*> arbitrary
+
+instance Arbitrary Timespan where
+  arbitrary = Timespan <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+                       <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+instance Arbitrary (Key Clock) where
+  arbitrary = mkKey <$> arbitrary
+
+instance Arbitrary (Key Timespan) where
+  arbitrary = mkKey <$> arbitrary

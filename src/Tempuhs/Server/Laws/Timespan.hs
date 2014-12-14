@@ -52,6 +52,7 @@ import Tempuhs.Server.Laws.Props
   beginMinProp,
   endMaxProp,
   isFlexProp,
+  isFlexibleProp,
   parentCycleProp,
   )
 import Tempuhs.Server.Requests.Timespan.Util
@@ -66,7 +67,7 @@ flexTimespan :: forall (m :: * -> *). (MonadIO m, Functor m)
 flexTimespan t = void . runMaybeT $ do
   u <- MaybeT $ get t
   c <- MaybeT $ get (timespanClock u)
-  when (isFlexProp c) $ lift $ fixFlex t
+  when (isFlexibleProp u && isFlexProp c) $ lift $ fixFlex t
 
 fixFlex :: forall (m :: * -> *). (MonadIO m, Functor m)
         => Key Timespan -> ReaderT SqlBackend m ()
@@ -95,7 +96,7 @@ flexParent t = void . runMaybeT $ do
   p <- MaybeT . return $ timespanParent u
   r <- MaybeT $ get p
   c <- MaybeT $ get (timespanClock r)
-  when (isFlexProp c) $ lift $ fixFlex p
+  when (isFlexibleProp u && isFlexProp c) $ lift $ fixFlex p
 
 parentCycle :: forall (m :: * -> *). MonadIO m
             => [Key Timespan]

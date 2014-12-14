@@ -8,6 +8,9 @@ Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Props.Timespan.Laws where
 
 --FlexLaws
+isFlexibleLaw :: String
+isFlexibleLaw = "A timespan that is not rubbish may be a flexible timespan."
+
 isFlexLaw :: String
 isFlexLaw = "A timespan with a clock with a name of \"<~>\" is a flexible timespan and subject to the laws of this section."
 

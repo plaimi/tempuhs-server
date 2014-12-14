@@ -117,7 +117,9 @@ test-suite prop
                        Tempuhs.Props.Timespan
                        Tempuhs.Props.Timespan.Laws
                        Tempuhs.Props.Timespan.Props
+  other-extensions:    FlexibleContexts
   build-depends:       base >=4.6 && <4.8,
+                       persistent >=2.1 && <2.2,
                        QuickCheck >=2.7 && <2.8,
                        quickcheck-instances >=0.3.9 && <0.4,
                        tempuhs,

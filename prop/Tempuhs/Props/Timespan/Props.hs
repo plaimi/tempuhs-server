@@ -9,6 +9,10 @@ License     :  AGPL-3
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Props.Timespan.Props where
 
+import Data.Maybe
+  (
+  isJust,
+  )
 import Test.QuickCheck
   (
   NonNegative,
@@ -28,9 +32,13 @@ import Tempuhs.Server.Laws.Props
   (
   beginMinProp,
   endMaxProp,
+  isFlexibleProp,
   isFlexProp,
   parentCycleProp,
   )
+
+isFlexibleTest :: Timespan -> Property
+isFlexibleTest t = isJust (timespanRubbish t) === isFlexibleProp t
 
 isFlexTest :: Clock -> Property
 isFlexTest c = (clockName c == "<~>") === isFlexProp c

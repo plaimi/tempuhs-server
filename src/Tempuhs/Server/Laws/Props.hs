@@ -12,6 +12,11 @@ Maintainer  :  tempuhs@plaimi.net
 import Plailude
 import Tempuhs.Chronology
 
+isFlexibleProp :: Timespan -> Bool
+-- | 'isFlexibleProp' enforces the FlexiTime rubbish law.
+isFlexibleProp Timespan{timespanRubbish = Nothing} = False
+isFlexibleProp _                                   = True
+
 isFlexProp :: Clock -> Bool
 -- | 'isFlexProp' enforces the FlexiTime clock name law.
 isFlexProp c = (clockName c == "<~>")
