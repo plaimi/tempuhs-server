@@ -4,7 +4,7 @@
 
 {- |
 Module      :  $Header$
-Description :  Timespan law enforcers.
+Description :  Timespan law enforcers. See /docs/LAWS.txt.
 Copyright   :  (c) plaimi 2014
 License     :  AGPL-3
 
@@ -62,7 +62,7 @@ import Tempuhs.Server.Requests.Timespan.Util
 flexTimespan :: forall (m :: * -> *). (MonadIO m, Functor m)
              => Key Timespan -> ReaderT SqlBackend m ()
 -- | 'flexTimespan' takes a 'Key Timespan' and makes sure that it, and its
--- parent, is respecting the FlexLaws (see /docs/LAWS.txt).
+-- parent, is respecting the FlexLaws.
 flexTimespan t = void . runMaybeT $ do
   u <- MaybeT $ get t
   c <- MaybeT $ get (timespanClock u)
@@ -71,8 +71,7 @@ flexTimespan t = void . runMaybeT $ do
 fixFlex :: forall (m :: * -> *). (MonadIO m, Functor m)
         => Key Timespan -> ReaderT SqlBackend m ()
 -- | 'fixFlex' makes sure the 'Timespan' with the passed in 'Key Timespan'
--- follows the FlexLaws (see /docs/LAWS.txt). It then checks the parent of the
--- 'Timespan' as well.
+-- follows the FlexLaws. It then checks the parent of the 'Timespan' as well.
 fixFlex t = do
   ds <- descendantLookup 1 [t]
   flexPerChildren t (map entityVal ds)
@@ -81,7 +80,7 @@ fixFlex t = do
 flexPerChildren :: forall (m :: * -> *). MonadIO m
                 => Key Timespan -> [Timespan] -> ReaderT SqlBackend m ()
 -- | 'flexPerChildren' looks up the children of a 'Timespan' using its 'Key
--- Timespan', and makes sure it follows the FlexLaws (see /docs/LAWS.txt).
+-- Timespan', and makes sure it follows the FlexLaws.
 flexPerChildren _ []  = return ()
 flexPerChildren t ds  = update t [TimespanBeginMin =. b, TimespanEndMax =. e]
   where (b, e) = (beginMinProp ds
@@ -90,7 +89,7 @@ flexPerChildren t ds  = update t [TimespanBeginMin =. b, TimespanEndMax =. e]
 flexParent :: forall (m :: * -> *). (MonadIO m, Functor m)
            => Key Timespan -> ReaderT SqlBackend m ()
 -- | 'flexParent' takes a 'Key Timespan' and makes sure that its parent, is
--- respecting the FlexLaws (see /docs/LAWS.txt).
+-- respecting the FlexLaws.
 flexParent t = void . runMaybeT $ do
   u <- MaybeT $ get t
   p <- MaybeT . return $ timespanParent u
@@ -102,7 +101,7 @@ parentCycle :: forall (m :: * -> *). MonadIO m
             => [Key Timespan]
             -> Key Timespan -> ReaderT SqlBackend m (Maybe Bool)
 -- | 'parentCycle' checks if there is an illegal cycle of 'TimespanParent's
--- per the ParentLaws (see /docs/LAWS.txt).
+-- per the ParentLaws.
 parentCycle ts p = runMaybeT $
   if not $ parentCycleProp p ts
     then return True
