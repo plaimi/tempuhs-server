@@ -13,7 +13,7 @@ import Plailude
 import Tempuhs.Chronology
 
 isFlexProp :: Clock -> Bool
--- | 'beginMinProp' enforces the FlexiTime clock name law.
+-- | 'isFlexProp' enforces the FlexiTime clock name law.
 isFlexProp c = (clockName c == "<~>")
 
 beginMinProp :: [Timespan] -> ProperTime
@@ -21,7 +21,7 @@ beginMinProp :: [Timespan] -> ProperTime
 beginMinProp = minimum . map timespanBeginMin
 
 endMaxProp :: [Timespan] -> ProperTime
--- | 'beginMinProp' enforces the FlexiTime endMax law.
+-- | 'endMaxProp' enforces the FlexiTime endMax law.
 endMaxProp = maximum . map timespanEndMax
 
 parentCycleProp :: Eq a => a -> [a] -> Bool
