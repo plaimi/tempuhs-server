@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE KindSignatures    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
@@ -14,6 +15,10 @@ Maintainer  :  tempuhs@plaimi.net
 import Control.Monad.Trans.Class
   (
   lift,
+  )
+import Control.Monad.Trans.Control
+  (
+  MonadBaseControl,
   )
 import Control.Monad.Trans.Resource
   (
@@ -52,13 +57,19 @@ import Database.Persist.Class
 import Database.Persist.Sql
   (
   ConnectionPool,
+  SqlBackend,
   SqlPersistT,
-  runSqlPool,
   runMigration,
+  runSqlConn
   )
 import Database.Persist.Types
   (
   Update,
+  )
+import Data.Pool
+  (
+  Pool,
+  withResource,
   )
 import Web.Scotty.Trans
   (
@@ -83,6 +94,10 @@ runSqlPersistAPool :: SqlPersistA a -> ConnectionPool -> ActionE a
 -- | 'runSqlPersistAPool' runs a database transaction within an 'ActionE',
 -- using a connection from the given 'ConnectionPool'.
 runSqlPersistAPool x pool = runResourceT $ runSqlPool x pool
+
+runSqlPool :: MonadBaseControl IO m
+           => SqlPersistT m a -> Pool SqlBackend -> m a
+runSqlPool r pconn = withResource pconn $ runSqlConn r
 
 mkKey :: PersistEntity record => Integer -> Key record
 -- | 'mkKey' is a convenience function for constructing a database key.
