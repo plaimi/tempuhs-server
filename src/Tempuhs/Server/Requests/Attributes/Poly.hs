@@ -6,23 +6,20 @@
 {- |
 Module      :  $Header$
 Description :  Attributes functions.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.Requests.Attributes.Poly where
 
-import Control.Arrow
-  (
-  first,
-  second,
-  )
 import Control.Monad
   (
   liftM,
+  void,
   )
 import Control.Monad.IO.Class
   (
+  liftIO,
   MonadIO,
   )
 import Control.Monad.Trans.Reader
@@ -45,6 +42,24 @@ import qualified Database.Esqueleto as E
 import Data.Functor
   (
   (<$>),
+  )
+import Data.Maybe
+  (
+  fromMaybe,
+  )
+import Data.Monoid
+  (
+  Monoid,
+  mempty,
+  )
+import Data.String
+  (
+  IsString,
+  )
+import Data.Time.Clock
+  (
+  getCurrentTime,
+  UTCTime,
   )
 import Database.Persist
   (
@@ -90,10 +105,8 @@ import Web.Scotty.Trans
   params,
   )
 
-import Plailude
 import Tempuhs.Server.Database
   (
-  liftAE,
   mkKey,
   runDatabase,
   )
@@ -105,70 +118,72 @@ import Tempuhs.Server.Param
 import Tempuhs.Server.Spock
   (
   ActionE,
-  jsonKey,
-  jsonSuccess,
   )
 
-patchAttribute :: forall r g f u. (Parsable g, Parsable f, PersistEntity u
-                                  ,PersistEntity r, PersistField f
-                                  ,PersistEntityBackend u ~ SqlBackend)
+patchAttribute :: forall g k v u r w s.
+                  (Parsable v, Parsable k, PersistEntity s, PersistEntity r
+                  ,PersistEntity g, PersistField v, IsString v
+                  ,PersistEntityBackend r ~ SqlBackend
+                  ,PersistEntityBackend g ~ SqlBackend)
                => L.Text
-               -> (Key r -> g -> Unique u)
-               -> EntityField u f
-               -> (Key r -> g -> f -> u)
+               -> (Key s -> k -> Unique g)
+               -> EntityField g v
+               -> (Key s -> k -> v -> Maybe u -> r)
+               -> EntityField g (Maybe UTCTime)
+               -> (g -> Maybe w)
                -> ConnectionPool
                -> ActionE ()
 -- | 'patchAttribute' looks up the passed in ID parametre, inserts or updates
 -- or deletes the passed in key with the passed in value if applicable. It
 -- also needs the getter-field for the attribute, along with the value field
 -- to update and the row to insert
-patchAttribute i g f r p = do
+patchAttribute i g f r rf rg p = do
   j <- paramE     i
   k <- paramE     "key"
   v <- maybeParam "value"
-  runDatabase p $ let kk = mkKey j in updateAttribute kk k v g f r
+  runDatabase p $ updateAttribute (mkKey j) k v g f r rf rg
 
-updateAttribute :: forall v g f k. (PersistEntity g, PersistField v
-                                   ,PersistEntityBackend g ~ SqlBackend)
+updateAttribute :: forall g f k v u r w.
+                   (PersistEntity r, PersistEntity g, PersistField v
+                   ,IsString v, PersistEntityBackend r ~ SqlBackend
+                   ,PersistEntityBackend g ~ SqlBackend)
                 => f
                 -> k
                 -> Maybe v
                 -> (f -> k -> Unique g)
                 -> EntityField g v
-                -> (f -> k -> v -> g)
+                -> (f -> k -> v -> Maybe u -> r)
+                -> EntityField g (Maybe UTCTime)
+                -> (g -> Maybe w)
                 -> ReaderT SqlBackend (ResourceT ActionE) ()
 -- | 'updateAttribute' updates the passed in attribute. It takes a @'Key' a@,
 -- which is the ID of the resource the attribute is related to, a key, and a
 -- 'Maybe' value. If the key already exists in the database, it is updated. If
 -- not, it is inserted. If the value is 'Nothing', the key is deleted if it
 -- exists. If the resource does not exist, nothing happens.
-updateAttribute i k v g f r = do
+updateAttribute i k v g f r rf rg = do
     a <- getBy $ g i k
-    case v of
-      Nothing -> deleteAttribute a
-      Just w  -> liftAE . jsonKey =<<
-        case a of
-          Just (Entity aid _) -> update aid [f =. w] >> return aid
-          Nothing -> insert $ r i k w
+    case (a, v) of
+      (Nothing, Nothing)           -> return ()
+      (Nothing, Just w)            -> void $ insert (r i k w  Nothing)
+      (Just (Entity b c), Nothing) ->
+        case rg c of
+          Just _  -> delete b
+          Nothing -> do
+            now <- liftIO getCurrentTime
+            update b [rf =. Just now]
+      (Just (Entity b _), Just w)  -> update b [f =. w]
 
-deleteAttribute :: forall a. PersistEntityBackend a ~ SqlBackend
-                => Maybe (Entity a)
-                -> ReaderT SqlBackend (ResourceT ActionE) ()
--- | 'deleteAttribute' takes a 'Maybe' attribute and deletes it if it's 'Just'
--- an attribute. If it's 'Nothing' this means the attribute doesn't exist in
--- the database, so nothing happens.
-deleteAttribute a = do
-  case a of
-    Just (Entity aid _) -> delete aid
-    Nothing             -> return ()
-  liftAE jsonSuccess
-
-attributesParams :: ActionE [(T.Text, T.Text)]
--- | 'attributeParams' gets all attributes form the '_' parametres. If a
+attributesParams :: ActionE [(T.Text, Maybe T.Text)]
+-- | 'attributeParams' gets all attributes from the '_' parametres. If a
 -- parametre ends with an '_', it is considered an attribute.
--- "&foo_=fu&bar_=baz". attrs is a list of key-value tuples.
-attributesParams = liftM (map (both L.toStrict . first L.init))
-                 $ filter (L.isSuffixOf "_" . fst) <$> params
+-- "&foo_=fu&bar_=baz". Valid attributes come in a list of key—'Maybe' value
+-- tuples.
+attributesParams =
+  liftM (map
+          (\(k, v) -> (L.toStrict (L.init k)
+                      ,if L.null v then Nothing else Just (L.toStrict v))))
+           $ filter (L.isSuffixOf "_" . fst) <$> params
 
 attributeSearch :: forall e (m :: * -> *) (query :: * -> *)
                           backend (expr :: * -> *) typ v w.
@@ -211,27 +226,32 @@ getAttrs :: forall v (m :: * -> *) r t.
 -- resource ID and field, and the attribute ID field.
 getAttrs a f i = selectList [f ==. entityKey a] [Asc i]
 
-insertAttributes :: forall t (m :: * -> *) ak av k.
-                          (MonadIO m, PersistEntity t
-                          ,E.PersistStore (PersistEntityBackend t))
-                 => (k -> ak -> av -> t)
-                 -> [(ak, av)]
+insertAttributes :: forall ak av r (m :: * -> *) k u.
+                    (MonadIO m, PersistEntity r, Monoid av
+                    ,E.PersistStore (PersistEntityBackend r))
+                 => (k -> ak -> av -> Maybe u -> r)
+                 -> [(ak, Maybe av)]
                  -> k
-                 -> ReaderT (PersistEntityBackend t) m ()
+                 -> ReaderT (PersistEntityBackend r) m ()
 -- | 'insertAttributes' inserts the given attributes (as) of the given type
 -- (t) with the given resource key (k).
-insertAttributes t as k = mapM_ (insert . uncurry (t k)) as
+insertAttributes t kv f = mapM_ (\(k, v)
+                       -> insert (t f k (fromMaybe mempty v) Nothing)) kv
 
-updateAttributes :: forall v g f k.
-                           (PersistEntity g, PersistField v
-                           ,PersistEntityBackend g ~ SqlBackend)
+updateAttributes :: forall g f k u r w v.
+                    (PersistEntity r, PersistEntity g
+                    ,PersistField v, IsString v
+                    ,PersistEntityBackend r ~ SqlBackend
+                    ,PersistEntityBackend g ~ SqlBackend)
                  => f
                  -> (f -> k -> Unique g)
                  -> EntityField g v
-                 -> (f -> k -> v -> g)
-                 -> [(k, v)]
+                 -> (f -> k -> v -> Maybe u -> r)
+                 -> EntityField g (Maybe UTCTime)
+                 -> (g -> Maybe w)
+                 -> [(k, Maybe v)]
                  -> ReaderT SqlBackend (ResourceT ActionE) ()
 -- | 'updateAttributes' updates the given attributes with the given resource
 -- ID.
-updateAttributes i g r f =
-  mapM_ (uncurry (\k v -> updateAttribute i k v g r f) . second Just)
+updateAttributes i g f r rf rg =
+  mapM_ (uncurry (\k v -> updateAttribute i k v g f r rf rg))

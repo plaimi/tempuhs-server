@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  User API.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -31,7 +31,6 @@ import Database.Esqueleto
   )
 import Database.Persist
   (
-  (=.),
   insert,
   replace,
   update,
@@ -48,6 +47,7 @@ import Web.Scotty.Trans
 import Tempuhs.Chronology hiding (second)
 import Tempuhs.Server.Database
   (
+  (=..),
   joinList,
   liftAE,
   mkKey,
@@ -55,7 +55,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.DELETE
   (
-  nowow,
+  attributesNowow,
   owow,
   )
 import Tempuhs.Server.Param
@@ -116,14 +116,19 @@ replaceUser p = do
   u  <- paramE "user"
   n  <- paramE "name"
   as <- attributesParams
-  runDatabase p $ let k = mkKey u in liftAE . jsonKey =<< do
+  runDatabase p $ liftAE . jsonKey =<< let k = mkKey u in do
     replace k (User n Nothing)
     insertAttributes UserAttribute as k
     return k
 
 deleteUser :: ConnectionPool -> ActionE ()
--- | 'deleteUser' updates the rubbish field of an existing 'User'.
-deleteUser = nowow "user" UserRubbish
+-- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
+deleteUser p = attributesNowow "user"
+                               UserRubbish
+                               getUserAttrs
+                               userAttributeName
+                               updateUserAttributes
+                               p
 
 unsafeDeleteUser :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteUser' hard-deletes a 'User' from the database.
@@ -132,16 +137,18 @@ unsafeDeleteUser = owow "user" userRubbish
 patchUser :: ConnectionPool -> ActionE ()
 -- | 'patchUser' modifies a 'User'.
 patchUser p = do
-  u <- paramE "user"
-  n <- paramE "name"
+  u <- paramE     "user"
+  n <- maybeParam "name"
   as <- attributesParams
-  runDatabase p $ let k = mkKey u in liftAE . jsonKey =<< do
-    update k [UserName =. n]
+  runDatabase p $ let k = mkKey u in do
+    update k $ concat [UserName =.. n]
     updateUserAttributes k as
-    return k
+    liftAE $ jsonKey k
 
 patchUserAttribute :: ConnectionPool -> ActionE ()
 -- | 'patchUserAttribute' sets or removes a 'UserAttribute'.
 patchUserAttribute = patchAttribute "user" UniqueUserAttribute
                                            UserAttributeValue
                                            UserAttribute
+                                           UserAttributeRubbish
+                                           userAttributeRubbish

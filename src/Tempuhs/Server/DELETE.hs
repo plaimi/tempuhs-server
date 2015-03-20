@@ -5,15 +5,27 @@
 {- |
 Module      :  $Header$
 Description :  The tempuhs server DELETE API.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Server.DELETE where
 
+import Control.Monad
+  (
+  void,
+  )
 import Control.Monad.IO.Class
   (
   liftIO,
+  )
+import Control.Monad.Trans.Reader
+  (
+  ReaderT,
+  )
+import Control.Monad.Trans.Resource.Internal
+  (
+  ResourceT,
   )
 import Data.Functor
   (
@@ -30,15 +42,17 @@ import Data.Time.Clock
   )
 import Database.Persist
   (
+  Entity (Entity),
   (=.),
   delete,
+  entityVal,
   get,
   update,
   )
 import Database.Persist.Class
   (
   EntityField,
-  PersistEntity,
+  PersistEntity (Key),
   PersistEntityBackend,
   )
 import Database.Persist.Sql
@@ -97,3 +111,29 @@ owow p f c =
     case f <$> mr of
       Just (Just _) -> return <$> (delete k >> liftAE jsonSuccess)
       _             -> return Nothing
+
+attributesNowow :: (PersistEntity v, PersistEntityBackend v ~ SqlBackend)
+                => Text
+                -> EntityField v (Maybe UTCTime)
+                -> (Entity v -> ReaderT SqlBackend (ResourceT ActionE) [Entity t])
+                -> (t -> a)
+                -> (Key v -> [(a, Maybe r)] -> ReaderT SqlBackend (ResourceT ActionE) u)
+                -> ConnectionPool
+                -> ActionE ()
+-- | 'attributesNowow' takes a parametre to look up. If the row exists, it
+-- sets the passed in field and its attributes to 'getCurrentTime'. If not, an
+-- error on the parametre is raised per 'withParam'.
+attributesNowow p f ga an ua c =
+  withParam p $ \r -> do
+    now <- liftIO getCurrentTime
+    runDatabase c $ do
+      let k = mkKey r
+      mr <- get k
+      case mr of
+        Just s  -> do
+          as <- ga (Entity k s)
+          let bs = map (an . entityVal) as
+          void $ ua k $ zip bs (repeat Nothing)
+          update k [f =. Just now]
+          return <$> liftAE jsonSuccess
+        Nothing -> return Nothing

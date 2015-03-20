@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Timespan API.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -51,7 +51,7 @@ import Tempuhs.Server.Database
   )
 import Tempuhs.Server.DELETE
   (
-  nowow,
+  attributesNowow,
   owow,
   )
 import Tempuhs.Server.Laws.Timespan
@@ -165,10 +165,12 @@ replaceTimespan pool = do
 
 deleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'deleteTimespan' updates the rubbish field of an existing 'Timespan'.
-deleteTimespan p = do
-  t <- paramE "timespan"
-  runDatabase p $ let k = mkKey t in flexTimespan k
-  nowow "timespan" TimespanRubbish p
+deleteTimespan p = attributesNowow "timespan"
+                                   TimespanRubbish
+                                   getTimespanAttrs
+                                   timespanAttributeName
+                                   updateTimespanAttributes
+                                   p
 
 unsafeDeleteTimespan :: ConnectionPool -> ActionE ()
 -- | 'unsafeDeleteClock' hard-deletes a 'Timespan' from the database.
@@ -214,3 +216,5 @@ patchTimespanAttribute :: ConnectionPool -> ActionE ()
 patchTimespanAttribute = patchAttribute "timespan" UniqueTimespanAttribute
                                                    TimespanAttributeValue
                                                    TimespanAttribute
+                                                   TimespanAttributeRubbish
+                                                   timespanAttributeRubbish

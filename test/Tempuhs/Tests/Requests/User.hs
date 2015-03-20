@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  User Specs for the tempuhs web server application.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -31,7 +31,6 @@ import Tempuhs.Spoc.Entity
   (
   defaultUser,
   defaultUserWithAttrs,
-  modUserAttr,
   )
 import Tempuhs.Spoc.Init
   (
@@ -41,7 +40,6 @@ import Tempuhs.Spoc.Init
 import Tempuhs.Spoc.JSON
   (
   jsonKey,
-  jsonSuccess,
   )
 import Tempuhs.Spoc.Request
   (
@@ -52,7 +50,7 @@ import Tempuhs.Spoc.Request
   )
 import Tempuhs.Tests.Requests.DELETE
   (
-  rubbishSpec,
+  attributesRubbishSpec,
   unsafeRubbishSpec,
   )
 
@@ -65,7 +63,6 @@ userSpec = do
   deleteSpec
   purgeSpec
   patchSpec
-  attributesSpec
 
 getSpec :: Spec
 getSpec =
@@ -104,7 +101,7 @@ replaceSpec =
       put "/users" "user=1&name=Joe" >>= assertJSONOK (jsonKey 1)
 
 deleteSpec :: Spec
-deleteSpec = rubbishSpec "user" initUser [(defaultUser, [] :: [()])]
+deleteSpec = attributesRubbishSpec "user" initUserAttribute [defaultUserWithAttrs]
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "user" initUser
@@ -115,19 +112,13 @@ patchSpec =
     it "modifies an existing user and its attributes" $ do
       initUser
       patch "/users" "user=1&name=Abuser" >>= assertJSONOK (jsonKey 1)
-
-attributesSpec :: Spec
-attributesSpec =
-  describe "PATCH /userAttributes" $ do
-    it "inserts a user attribute with key 1"
+    it "rubbishes an existing user attribute" $ do
       initUserAttribute
-    it "modifies an existing user attribute" $ do
+      patch "/users" "user=1&name_=" >>= assertJSONOK (jsonKey 1)
+    it "returns the rubbished user attribute" $ do
       initUserAttribute
-      patch "/userAttributes" "user=1&key=name&value=new" >>=
-        assertJSONOK (jsonKey 1)
-      get "/users" >>= assertJSONOK [(defaultUser, [modUserAttr])]
-    it "deletes an existing user attribute" $ do
+      patch "/users" "user=1&name_=" >>= assertJSONOK (jsonKey 1)
+    it "deletes a rubbished user attribute" $ do
       initUserAttribute
-      patch "/userAttributes" "user=1&key=name" >>= assertJSONOK jsonSuccess
-      get "/users" >>= assertJSONOK [(defaultUser, [] :: [()])]
-    itReturnsMissingParam $ patch "/userAttributes" ""
+      patch "/users" "user=1&name_=" >> patch "/users" "user=1&name_"
+        >>= assertJSONOK (jsonKey 1)

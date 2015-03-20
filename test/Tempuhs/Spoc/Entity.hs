@@ -7,7 +7,7 @@
 {- |
 Module      :  $Header$
 Description :  Entities for tests.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -22,7 +22,6 @@ import Control.Lens
   (.~),
   (^.),
   (&),
-  _1,
   )
 import Data.Aeson
   (
@@ -52,7 +51,6 @@ import Database.Persist
 import qualified Data.Set as Z
 import qualified Data.Text as T
 
-import Plailude
 import Tempuhs.Chronology
 import Tempuhs.Server.Database
   (
@@ -73,10 +71,6 @@ instance HasRubbish a (Maybe UTCTime)
       => HasRubbish (Entity a) (Maybe UTCTime) where
   rubbish f (Entity a b) = Entity a <$> rubbish f b
 
-instance HasRubbish a (Maybe UTCTime)
-      => HasRubbish (a, b) (Maybe UTCTime) where
-  rubbish = _1 . rubbish
-
 (=^=) :: (HasRubbish a (Maybe UTCTime), ToJSON a) => [a] -> [a] -> Bool
 -- | '(=^=)' takes two lists of GET results, and checks if the results in
 -- the first list is the same as rubbished versions of the useful results in
@@ -86,6 +80,13 @@ instance HasRubbish a (Maybe UTCTime)
   in  isJust rb && toJSON (a & rubbish .~ rb) == toJSON b && as =^= bs
 [] =^= [] = True
 _  =^= _  = False
+
+(=^^=) :: (HasRubbish a (Maybe UTCTime), HasRubbish b (Maybe UTCTime)
+          ,ToJSON a, ToJSON b)
+       => [(a, [b])] -> [(a, [b])] -> Bool
+-- | '(=^^=)' is a special version of '(=^=)' for things with attributes.
+a =^^= b = and $ (fst <$> a) =^= (fst <$> b)
+               : zipWith (=^=) (snd <$> a) (snd <$> b)
 
 clockEntity :: Integer -> T.Text -> Entity Clock
 -- | 'clockEntity' is a convenience function for constructing an 'Entity'
@@ -106,7 +107,8 @@ attributeEntity :: Integer -> Integer -> T.Text -> T.Text
                 -> Entity TimespanAttribute
 -- | 'attributeEntity' is a convenience function for constructing
 -- an 'Entity' containing a 'TimespanAttribute'.
-attributeEntity k = Entity (mkKey k) .:. (TimespanAttribute . mkKey)
+attributeEntity i f k v =
+  Entity (mkKey i) $ TimespanAttribute (mkKey f) k v Nothing
 
 timespanEntity :: Z.Set Specified -> Entity Timespan
 -- | 'timespanEntity' is a convenience function for constructing
@@ -188,13 +190,9 @@ defaultUser = Entity (mkKey 1) $ User "Luser" Nothing
 defaultUserWithAttrs :: (Entity User, [Entity UserAttribute])
 -- | 'defaultUserWithAttrs' is a helper value for the often used
 -- 'Init.initUserAttribute'.
-defaultUserWithAttrs = (defaultUser
-                       ,[Entity (mkKey 1) $ UserAttribute (mkKey 1)
-                                                          "name" "test"])
-
-modUserAttr :: Entity UserAttribute
--- | 'modUserAttr' is a helper value for testing a modified 'UserAttribute'.
-modUserAttr = Entity (mkKey 1) $ UserAttribute (mkKey 1) "name" "new"
+defaultUserWithAttrs =
+  (defaultUser
+  ,[Entity (mkKey 1) $ UserAttribute (mkKey 1) "name" "test" Nothing])
 
 defaultRole :: Entity Role
 -- | 'defaultRole' is a helper value for the often used

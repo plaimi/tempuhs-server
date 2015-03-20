@@ -4,11 +4,12 @@
 {- |
 Module      :  $Header$
 Description :  DELETE Specs for the tempuhs web server application.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
 -} module Tempuhs.Tests.Requests.DELETE (
+  attributesRubbishSpec,
   rubbishSpec,
   unsafeRubbishSpec,
   ) where
@@ -51,6 +52,7 @@ import Tempuhs.Spoc.Assert
 import Tempuhs.Spoc.Entity
   (
   (=^=),
+  (=^^=),
   )
 import Tempuhs.Spoc.JSON
   (
@@ -94,3 +96,12 @@ unsafeRubbishSpec f i =
       i >> pu f >>= assertJSONError 400 "INVALID_PARAM"
     it ("purges a " ++ f) $ i >> ru f >> pu f >>= assertJSONOK jsonSuccess
     it "returns []" $ get (pack $ f ++ "s") >>= assertJSONOK ()
+
+attributesRubbishSpec f i d =
+  describe ("DELETE /" ++ f ++ "s") $ do
+    it ("rubbishes a " ++ f) $ i >> ru f >>= assertJSONOK jsonSuccess
+    it ("returns the rubbished " ++ f) $ do
+      i >> ru f >>= assertJSONOK jsonSuccess
+      get (pack $ "/" ++ f ++ "s?rubbish=2000-01-01") >>= \r -> do
+        assertStatus 200 r
+        assertJSON ("a rubbished version of: " ++ showJSON d) r (d =^^=)

@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Timespan Specs for the tempuhs web server application.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -19,6 +19,11 @@ import Control.Monad
   forM_,
   guard,
   join,
+  replicateM,
+  )
+import Data.Functor
+  (
+  (<$>),
   )
 import Data.List
   (
@@ -52,13 +57,10 @@ import Tempuhs.Spoc.Entity
   modTimespanEntity,
   specialTimespan,
   timespansAttrs,
-  timespanEntity,
   timespansSpecs,
-  timespansSpecsAttrs,
   )
 import Tempuhs.Spoc.Init
   (
-  initTimespanAttribute,
   initClock,
   initDefaultTimespan,
   initModTimespan,
@@ -69,7 +71,6 @@ import Tempuhs.Spoc.Init
 import Tempuhs.Spoc.JSON
   (
   jsonKey,
-  jsonSuccess,
   )
 import Tempuhs.Spoc.Request
   (
@@ -82,7 +83,7 @@ import Tempuhs.Spoc.Request
   )
 import Tempuhs.Tests.Requests.DELETE
   (
-  rubbishSpec,
+  attributesRubbishSpec,
   unsafeRubbishSpec,
   )
 
@@ -95,7 +96,6 @@ timespanSpec = do
   deleteSpec
   purgeSpec
   patchSpec
-  attributesSpec
 
 getSpec :: Spec
 getSpec =
@@ -127,9 +127,9 @@ getSpec =
       forM_ ["begin=43", "end=9"] $
         get . B.append "/timespans?" >=> assertJSONOK ()
     it "returns associated timespan attributes" $ do
-      initTimespanAttribute
+      initTimespanAttrs attributes
       getTimespans (10, 42) >>=
-        assertJSONOK (timespansSpecsAttrs specifieds [("title", "test")])
+        assertJSONOK (timespansAttrs attributes)
     it "filters on parent" $ do
       initDefaultTimespan
       initSubTimespan 2 1
@@ -215,7 +215,8 @@ replaceSpec =
         >>= assertJSONOK (jsonKey 1)
 
 deleteSpec :: Spec
-deleteSpec = rubbishSpec "timespan" initDefaultTimespan defaultTimespans
+deleteSpec = attributesRubbishSpec "timespan" initDefaultTimespan
+                                              defaultTimespans
 
 purgeSpec :: Spec
 purgeSpec = unsafeRubbishSpec "timespan" initDefaultTimespan
@@ -226,22 +227,13 @@ patchSpec =
     it "modifies an existing timespan and its attributes" $ do
       initModTimespan
       getTimespans (10, 42) >>= assertJSONOK [modTimespanEntity]
-
-attributesSpec :: Spec
-attributesSpec =
-  describe "PATCH /timespanAttributes" $ do
-    it "inserts a timespan attribute with key 1"
-      initTimespanAttribute
-    it "modifies an existing timespan attribute" $ do
-      initTimespanAttribute
-      patch "/timespanAttributes" "timespan=1&key=title&value=new" >>=
-        assertJSONOK (jsonKey 1)
-      getTimespans (10, 42) >>=
-        assertJSONOK (timespansSpecsAttrs specifieds [("title", "new")])
-    it "deletes an existing timespan attribute" $ do
-      initTimespanAttribute
-      patch "/timespanAttributes" "timespan=1&key=title" >>=
-        assertJSONOK jsonSuccess
-      getTimespans (10, 42) >>=
-        assertJSONOK [(timespanEntity specifieds, [] :: [()])]
-    itReturnsMissingParam $ patch "/timespanAttributes" ""
+    it "rubbishes an existing timespan attribute" $ do
+      initTimespanAttrs attributes
+      patch "/timespans" "timespan=1&title_=" >>= assertJSONOK (jsonKey 1)
+    it "returns the rubbished user attribute" $ do
+      initTimespanAttrs attributes
+      patch "/timespans" "timespan=1&title_=" >>= assertJSONOK (jsonKey 1)
+    it "deletes a rubbished user attribute" $ do
+      initTimespanAttrs attributes
+      last <$> replicateM 2 (patch "/timespans" "timespan=1&title_=")
+        >>= assertJSONOK (jsonKey 1)

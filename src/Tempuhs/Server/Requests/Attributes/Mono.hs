@@ -6,7 +6,7 @@
 {- |
 Module      :  $Header$
 Description :  Attributes functions.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -48,22 +48,25 @@ getUserAttrs :: Entity User
 -- | 'getUserAttrs' is a wrapper around 'getAttrs' for 'UserAttribute's.
 getUserAttrs a = getAttrs a UserAttributeUser UserAttributeId
 
-updateUserAttributes :: Key User -> [(Text, Text)]
-                         -> ReaderT SqlBackend (ResourceT ActionE) ()
+updateUserAttributes :: Key User -> [(Text, Maybe Text)]
+                     -> ReaderT SqlBackend (ResourceT ActionE) ()
 -- | 'updateUserAttribute' is a wrapper around 'updateAttributes' for
 -- 'UserAttribute's.
 updateUserAttributes i = updateAttributes i UniqueUserAttribute
-                                                UserAttributeValue
-                                                UserAttribute
+                                            UserAttributeValue
+                                            UserAttribute
+                                            UserAttributeRubbish
+                                            userAttributeRubbish
 
-
-updateTimespanAttributes :: Key Timespan -> [(Text, Text)]
-                         -> ReaderT E.SqlBackend (ResourceT ActionE) ()
+updateTimespanAttributes :: Key Timespan -> [(Text, Maybe Text)]
+                         -> ReaderT SqlBackend (ResourceT ActionE) ()
 -- | 'updateTimespanAttributes' is a wrapper around 'updateAttributes' for
 -- 'TimespanAttribute's.
 updateTimespanAttributes i = updateAttributes i UniqueTimespanAttribute
                                                 TimespanAttributeValue
                                                 TimespanAttribute
+                                                TimespanAttributeRubbish
+                                                timespanAttributeRubbish
 
 getTimespanAttrs :: E.Entity Timespan
                  -> ReaderT E.SqlBackend (ResourceT ActionE)

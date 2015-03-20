@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Inits for tests.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2014-2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -91,25 +91,16 @@ initSubTimespan n m = post "/timespans" body >>= assertJSONOK (jsonKey n)
   where body =
           "parent=" `L.append` showL8 m `L.append` "&clock=TT&beginMin=-10.0"
 
-initTimespanAttribute :: Session ()
--- | 'initTimespanAttribute' does 'initTimespanSpecs', then inserts a timespan
--- attribute and checks the response.
-initTimespanAttribute =
-  initTimespanSpecs specifieds >>
-    patch "/timespanAttributes" body >>= assertJSONOK (jsonKey 1)
-  where body = "timespan=1&key=title&value=test"
-
 initUser :: Session ()
 -- | 'initUser' inserts a user into an empty database and checks the
 -- response.
 initUser = post "/users" "name=Luser" >>= assertJSONOK (jsonKey 1)
 
 initUserAttribute :: Session ()
--- | 'initUserAttribute' does 'initUser', then inserts a user attribute and
+-- | 'initUserAttribute' inserts a user with attributes and
 -- checks the response.
-initUserAttribute =
-  initUser >> patch "/userAttributes" body >>= assertJSONOK (jsonKey 1)
-  where body = "user=1&key=name&value=test"
+initUserAttribute = post "/users" "name=Luser&name_=test"
+                >>= assertJSONOK (jsonKey 1)
 
 initRole :: Session ()
 -- | 'initRole' does 'initUser', and then inserts a role and checks the
