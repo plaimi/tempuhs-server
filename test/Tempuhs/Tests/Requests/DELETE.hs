@@ -97,6 +97,11 @@ unsafeRubbishSpec f i =
     it ("purges a " ++ f) $ i >> ru f >> pu f >>= assertJSONOK jsonSuccess
     it "returns []" $ get (pack $ f ++ "s") >>= assertJSONOK ()
 
+attributesRubbishSpec :: (HasRubbish d (Maybe UTCTime)
+                         ,HasRubbish a (Maybe UTCTime)
+                         ,FromJSON d, ToJSON d
+                         ,FromJSON a, ToJSON a)
+                      => String -> Session () -> [(d, [a])] -> Spec
 attributesRubbishSpec f i d =
   describe ("DELETE /" ++ f ++ "s") $ do
     it ("rubbishes a " ++ f) $ i >> ru f >>= assertJSONOK jsonSuccess
