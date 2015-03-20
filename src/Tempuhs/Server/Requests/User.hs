@@ -90,15 +90,15 @@ users p = do
   as <- attributeSearch UserAttributeUser UserId UserAttributeName
                                                  UserAttributeValue
   runDatabase p $ do
-    user <- select $
+    usr <- select $
       joinList as $
           from $ \u -> do
             where_ $ foldl (&&.) (val True) $
                     [u ^. UserId   ==. val (mkKey ui) | ui <- toList i] ++
-                    [u ^. UserName ==. val un | un <- toList n]
+                    [u ^. UserName ==. val un         | un <- toList n]
             orderBy [asc $ u ^. UserId]
             return u
-    liftAE . json =<< mapM (\a -> (,) a <$> getUserAttrs a) user
+    liftAE . json =<< mapM (\a -> (,) a <$> getUserAttrs a) usr
 
 postUser :: ConnectionPool -> ActionE ()
 -- | 'postUser' inserts a 'User'.
