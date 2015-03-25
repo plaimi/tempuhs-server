@@ -97,6 +97,8 @@ runSqlPersistAPool x pool = runResourceT $ runSqlPool x pool
 
 runSqlPool :: MonadBaseControl IO m
            => SqlPersistT m a -> Pool SqlBackend -> m a
+-- | 'runSqlPool' runs the given action with the connection from the given
+-- pool.
 runSqlPool r pconn = withResource pconn $ runSqlConn r
 
 mkKey :: PersistEntity record => Integer -> Key record
