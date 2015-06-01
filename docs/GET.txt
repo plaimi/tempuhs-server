@@ -145,3 +145,7 @@ Get all permissionsets of role 1:
 
 Get the permissionset of timespan 1 and role 1:
   /permissionsets?timespan=1&role=1
+
+/src
+==========
+Retrieve the source code of the tempuhs instance. No arguments. No nothing.

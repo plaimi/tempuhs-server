@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Requests.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -31,6 +31,10 @@ import Tempuhs.Server.Requests.Clock
   postClock,
   replaceClock,
   unsafeDeleteClock,
+  )
+import Tempuhs.Server.Requests.Meta
+  (
+  src,
   )
 import Tempuhs.Server.Requests.Permissionset
   (
@@ -120,3 +124,7 @@ userRequests p = do
   delete "/users/purge"    $ unsafeDeleteUser  p
   patch  "/users"          $ patchUser         p
   patch  "/userAttributes" $ patchUserAttribute p
+
+metaRequests :: ConnectionPool -> ScottyE ()
+metaRequests _ =
+  get "/src" src

@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Runs the Specs for the tempuhs web server application.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -18,6 +18,10 @@ import Test.Hspec
 import Tempuhs.Tests.Requests.Clock
   (
   clockSpec,
+  )
+import Tempuhs.Tests.Requests.Meta
+  (
+  metaSpec,
   )
 import Tempuhs.Tests.Requests.Permissionset
   (
@@ -44,6 +48,7 @@ spec = do
   roleSpec
   userSpec
   permissionsetSpec
+  metaSpec
 
 main :: IO ()
 -- | 'main' runs 'spec' using 'hspec'.

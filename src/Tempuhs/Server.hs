@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  The tempuhs web server application
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
@@ -22,6 +22,7 @@ import Web.Scotty.Trans
 import Tempuhs.Server.Requests
   (
   clockRequests,
+  metaRequests,
   permissionsetRequests,
   roleRequests,
   timespanRequests,
@@ -43,4 +44,5 @@ serve p = do
   roleRequests          p
   timespanRequests      p
   userRequests          p
+  metaRequests          p
   notFound $ jsonError errNotFound
