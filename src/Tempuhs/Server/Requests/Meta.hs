@@ -3,7 +3,7 @@
 {- |
 Module      :  $Header$
 Description :  Metarequests regarding tempuhs itself.
-Copyright   :  (c) plaimi 2014
+Copyright   :  (c) plaimi 2015
 License     :  AGPL-3
 
 Maintainer  :  tempuhs@plaimi.net
